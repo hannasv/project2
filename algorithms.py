@@ -33,8 +33,9 @@ class OLS:
     def fit(self, X, y):
         """Train the model"""
         #print("cond" + str(np.linalg.cond(X.T @ X)))
-        self.coef_ = sp.linalg.inv(X.T @ X)@ X.T @ y
-
+        #self.coef_ = sp.linalg.inv(X.T @ X)@ X.T @ y
+        self.coef_ = np.linalg.pinv(X.T @ X)@ X.T @ y
+        # to avoid singular matrixx --> if this doesn't work do svd or use scykit sin (last choise)
 
     def predict(self, X):
         """Aggregate model predictions """
