@@ -16,7 +16,7 @@ __email__ = 'hanna.svennevik@fys.uio.no', 'paulinatedesco@gmail.com'
 import numpy as np
 from utils import bootstrap, mean_squared_error, train_test_split, r2_score
 
-class GridSearchNew:
+class GridSearch:
 
     """
     Determines optimal hyperparameter for given algorithm, without resampling.

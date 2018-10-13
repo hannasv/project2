@@ -10,8 +10,8 @@ from sklearn.pipeline import make_pipeline
 from scipy import stats
 import scipy.stats as st
 import algorithms
-import model_selection0
-from model_comparison0 import model_comparison0
+#import model_selection
+#from model_comparison import model_comparison
 from utils import generateDesignmatrix, franke_function, train_test_split, bootstrap,  ci
 import unittest.mock as mock
 import numpy
