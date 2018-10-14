@@ -32,10 +32,10 @@ class OLS:
 
     def fit(self, X, y):
         """Train the model"""
-        #print("cond" + str(np.linalg.cond(X.T @ X)))
         #self.coef_ = sp.linalg.inv(X.T @ X)@ X.T @ y
-        self.coef_ = np.linalg.pinv(X.T @ X)@ X.T @ y
-        # to avoid singular matrixx --> if this doesn't work do svd or use scykit sin (last choise)
+        #self.coef_ = np.linalg.pinv(X.T @ X)@ X.T @ y
+        u,s,v = svd(X)
+        self.coef_ = u@s@U.T@y@np.linalg.inv(d@d)
 
     def predict(self, X):
         """Aggregate model predictions """
@@ -57,7 +57,8 @@ class Ridge:
 
     def fit(self, X, y):
         """Train the model."""
-        self.coef_ = linalg.inv(X.T @ X + self.lmd * np.identity(X.shape[1])) @ X.T @ y
+        #self.coef_ = linalg.inv(X.T @ X + self.lmd * np.identity(X.shape[1])) @ X.T @ y
+        self.coef_ = u@s@U.T@y@np.linalg.inv(d@d + lmd*np.identity(len(d)))
 
     def predict(self, X):
         """Aggregate model predictions."""
