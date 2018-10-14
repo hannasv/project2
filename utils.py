@@ -108,3 +108,18 @@ def ci(x):
 def error(y_test, y_pred):
     square_diff =  [np.square(y_test - y_pred[i]) for i in range(np.shape(y_pred)[0])]
     return np.mean( np.mean(square_diff ))
+
+
+
+def svd(A):
+    " returns the singular value decomposition of a matrix A = U@D@V.T"
+    # calculate eigenvalues and eigenvectores.
+    nrows, ncols = np.shape(A)
+    u,V = np.linalg.eig(A.T@A)
+    # u is a vector of eigenvalues
+    # v is a vecort of eigenvectores.
+    s = np.sqrt(u)
+    D = np.identity(ncols)*s
+    # D-1 is equal to 1/dii for all elements in D.
+    U = A@V@np.linalg.inv(D)
+    return U, D, V

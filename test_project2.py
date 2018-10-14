@@ -12,7 +12,7 @@ import scipy.stats as st
 import algorithms
 #import model_selection
 #from model_comparison import model_comparison
-from utils import generateDesignmatrix, franke_function, train_test_split, bootstrap,  ci
+from utils import generateDesignmatrix, franke_function, train_test_split, bootstrap,  ci, svd
 import unittest.mock as mock
 import numpy
 import utils
@@ -110,3 +110,10 @@ def test_ci():
     n = len(x)
     mu = np.sum(x)/n
     assert utils.ci(x) == st.t.interval(0.95, n-1, loc=mu, scale=st.sem(x))
+
+
+
+def test_svd():
+    A = np.concatenate([[1,2,3], [9,7,2], [6,1,4]]).reshape((3, 3))
+    u,d,v = svd(A)
+    assert np.allclose(u@d@v.T,A)

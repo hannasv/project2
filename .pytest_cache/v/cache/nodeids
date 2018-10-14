@@ -1,0 +1,12 @@
+[
+  "test_project2.py::test_design",
+  "test_project2.py::test_mse",
+  "test_project2.py::test_r2",
+  "test_project2.py::test_ols",
+  "test_project2.py::test_ridge",
+  "test_project2.py::test_bootstrap",
+  "test_project2.py::test_split",
+  "test_project2.py::test_variance",
+  "test_project2.py::test_ci",
+  "test_project2.py::test_svd"
+]
