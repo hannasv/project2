@@ -15,7 +15,7 @@ __email__ = 'hanna.svennevik@fys.uio.no', 'paulinatedesco@gmail.com'
 
 import algorithms
 import numpy as np
-from model_selection0 import GridSearchNew
+from model_selection import GridSearch
 
 def model_comparison(models, param_grid, X, z, split_size=0.2, verbose=True):
     """Perform the model comparison experiment.

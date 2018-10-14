@@ -113,6 +113,8 @@ def error(y_test, y_pred):
 
 def svd(A):
     " returns the singular value decomposition of a matrix A = U@D@V.T"
+
+    " Sort singular values in decrending order "
     # calculate eigenvalues and eigenvectores.
     nrows, ncols = np.shape(A)
     u,V = np.linalg.eig(A.T@A)
