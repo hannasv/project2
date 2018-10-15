@@ -36,7 +36,8 @@ class OLS:
         #self.coef_ = sp.linalg.inv(X.T @ X)@ X.T @ y
         #self.coef_ = np.linalg.pinv(X.T @ X)@ X.T @ y
         #u,s,v = svd(X)
-        #self.coef_ = v@s@u.T@y@np.linalg.inv(s@s)
+        #self.coef_ = v@np.linalg.pinv(s)@u.T@y
+
         u,s,vh = np.linalg.svd(X, full_matrices = False)
         #vh is v transpose
         s = np.identity(len(s))*s
@@ -64,11 +65,13 @@ class Ridge:
         """Train the model."""
         #self.coef_ = linalg.inv(X.T @ X + self.lmd * np.identity(X.shape[1])) @ X.T @ y
         #u,s,v = svd(X)
-        u,s,vh = np.linalg.svd(X, full_matrices = False)
-        s = np.identity(len(s))*s
 
         self.coef_ = X.T@y@np.linalg.inv(X.T@X + self.lmd*np.identity(X.shape[1]))
-        # legg inn svd
+
+        #u,s,vh = np.linalg.svd(X, full_matrices = False)
+        #s = np.identity(len(s))*s
+        #self.coef_ = X.T@y@np.linalg.inv(X.T@X + self.lmd*np.identity(X.shape[1]))
+
 
 
     def predict(self, X):

@@ -38,6 +38,7 @@ class GridSearch:
         self.mse_train = None
         self.r2_test = None
         self.r2_train = None
+        self.coef_ = None
 
     def fit(self, X, z, split_size):
         """Searches for the optimal hyperparameter combination."""
@@ -58,6 +59,7 @@ class GridSearch:
         self.r2_test = []
         self.r2_train = []
         self.z_pred = []
+        self.coef_ = []
         # For en model tester vi alle parameterne og returnerer denne.
         for param in self.params:
             estimator = self.model(lmd=param)
@@ -70,5 +72,5 @@ class GridSearch:
             self.r2_test.append(r2_score(z_test, temp))
             self.r2_train.append(r2_score(z_train, temp2))
             self.z_pred.append(temp)
-
+            self.coef_.append(estimator.coef_)
         return self
