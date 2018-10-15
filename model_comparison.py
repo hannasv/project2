@@ -61,6 +61,13 @@ def model_comparison(models, param_grid, X, z, split_size=0.2, verbose=True):
         "ols": []
     }
 
+    coeffs = {
+        'ridge': [],
+        'lasso': [],
+        "ols": []
+    }
+
+
     for name, estimator in models.items():
 
         if verbose:
@@ -75,11 +82,13 @@ def model_comparison(models, param_grid, X, z, split_size=0.2, verbose=True):
         r2_test[name].append(grid.r2_test)
         r2_train[name].append(grid.r2_train)
 
-        # find best mse
-        mn, idx = min((grid.mse_test[i], i) for i in range(len(grid.mse_test)))
-        print(idx)
-        z_pred_best[name] = grid.z_pred[idx]
+        coeffs[name].append(grid.coef_)
+
+    # find best mse Hanna moved this out of the loop
+    mn, idx = min((grid.mse_test[i], i) for i in range(len(grid.mse_test)))
+    print(idx)
+    z_pred_best[name] = grid.z_pred[idx]
 
     results = {"mse_test": mse_test, "mse_train": mse_train, "r2_test": r2_test, "r2_train": r2_train}
 
-    return results, z_pred_best
+    return results, z_pred_best, coeffs
