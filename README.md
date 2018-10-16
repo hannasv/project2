@@ -6,5 +6,4 @@ This cite contains all the material for the assignment project 2 in the course f
 
 
 ## Abstract
-paste
 
