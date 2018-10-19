@@ -17,7 +17,8 @@ from scipy import linalg
 import scipy as sp
 from sklearn import linear_model
 import numpy as np
-from utils import svd
+from utils import ELU, sigmoid, stochastic_gradient_descent, standard_gradient_descent,
+mini_batch_gradient_descent, cost_function
 
 class OLS:
     """The ordinary least squares algorithm"""
@@ -66,8 +67,8 @@ class Ridge:
         #self.coef_ = linalg.inv(X.T @ X + self.lmd * np.identity(X.shape[1])) @ X.T @ y
         #u,s,v = svd(X)
 
-        self.coef_ = X.T@y@np.linalg.inv(X.T@X + self.lmd*np.identity(X.shape[1]))
-
+        #self.coef_ = X.T@y@np.linalg.inv(X.T@X + self.lmd*np.identity(X.shape[1]))
+        self.coef_ = linalg.pinv(X.T @ X + self.lmd * np.identity(X.shape[1])) @ X.T @ y
         #u,s,vh = np.linalg.svd(X, full_matrices = False)
         #s = np.identity(len(s))*s
         #self.coef_ = X.T@y@np.linalg.inv(X.T@X + self.lmd*np.identity(X.shape[1]))
@@ -119,13 +120,14 @@ class LogisticRegression(object):
       Weights after fitting.
     cost_ : list
       Logistic cost function value in each epoch.
-
     """
-    def __init__(self, eta, n_iter, random_state):
+    def __init__(self, eta, n_iter, random_state, key, lmd):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
         #self.cost_ = cost # initialization of the cost_function
+        self.key = key
+        self.lmd = lmd
 
     def fit(self, X, y):
         """ Fit training data.
@@ -143,12 +145,23 @@ class LogisticRegression(object):
         self : object
 
         """
+
+        costfunc = {
+            'ols' = cost_function("ols", y),
+            'ridge' = cost_function("ridge", y),
+            'lasso' = cost_function("lasso", y),
+        }
+
+        #initialization weights to be random numbers from -0.7 to 0.7
         rgen = np.random.RandomState(self.random_state)
-        self.w_ = rgen.normal(loc=0.0, scale=0.01, size=1 + X.shape[1])
+        self.w_ = rgen.normal(loc=0.0, scale=0.7, size=1 + X.shape[1])
+        #self.w_ = np.random.rand(-0.7, 0.7, )
         self.cost_ = []
 
         for i in range(self.n_iter):
-            net_input = self.net_input(X)
+
+            # Linar combination of weights and x'es
+            net_input = np.dot(X, self.w_[1:]) + self.w_[0]
             output = self.activation(net_input)
             errors = (y - output)
 
@@ -157,21 +170,15 @@ class LogisticRegression(object):
             # note that we compute the logistic `cost` now
             # instead of the sum of squared errors cost
 
-            grad_ols = X.T.dot(errors)
-            grad_ridge = X.T.dot(errors) - lmd*output # double check output
-            grad_lasso = X.T.dot(errors) - lmd # double check
+            #grad_ols = X.T.dot(errors)
+            #grad_ridge = X.T.dot(errors) + lmd*w[1:] # double check output
+            #grad_lasso = X.T.dot(errors) + lmd # double check
 
             cost_ols = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output)))
-            cost_ridge = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))) + lmd*output**2
-            cost_lasso = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))) + lmd*abs(output)
+            #cost_ridge = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))) + lmd*output**2
+            #cost_lasso = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))) + lmd*abs(output)
             self.cost_.append(cost_ols)
         return self
-
-    # denne skal være i utils???
-    def stochastic_gradient_descent(costfunc, eta):
-        pass
-    def cost_function():
-        pass
 
     def net_input(self, X):
         """Calculate net input"""

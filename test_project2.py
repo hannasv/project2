@@ -110,10 +110,3 @@ def test_ci():
     n = len(x)
     mu = np.sum(x)/n
     assert utils.ci(x) == st.t.interval(0.95, n-1, loc=mu, scale=st.sem(x))
-
-
-
-def test_svd():
-    A = np.concatenate([[1,2,3], [9,7,2], [6,1,4]]).reshape((3, 3))
-    u,d,v = svd(A)
-    assert np.allclose(u@d@v.T,A)
