@@ -104,7 +104,7 @@ def mini_batch_gradient_descent(eta, n_epochs, batch_size):
 
 # To types of activation function:
 def sigmoid(X, w):
-    return 1./1. + np.exp(X.dot(w[1:]) + w[0]])
+    return 1./1. + np.exp(-X.dot(w[1:]) - w[0]])
 
 def ELU(X,w):
     pass
