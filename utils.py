@@ -88,33 +88,3 @@ def ci(x):
 def error(y_test, y_pred):
     square_diff =  [np.square(y_test - y_pred[i]) for i in range(np.shape(y_pred)[0])]
     return np.mean( np.mean(square_diff ))
-
-
-# Two types  of optimizer:
-def stochastic_gradient_descent(eta, n_iter):
-    pass
-
-
-def standard_gradient_descent(eta, n_epochs, t0, t1):
-    pass
-
-def mini_batch_gradient_descent(eta, n_epochs, batch_size):
-    pass
-
-
-# To types of activation function:
-def sigmoid(X, w):
-    return 1./1. + np.exp(-X.dot(w[1:]) - w[0]])
-
-def ELU(X,w):
-    pass
-
-def cost_function(key, y, lmd=0, w=0):
-    if (key == "ols"):
-        return -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output)))
-    elif(key == "lasso"):
-        return -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))) + lmd
-    elif(key == "ridge"):
-        return -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))) + lmd*w
-    else:
-        print(key + " is not valid key.")

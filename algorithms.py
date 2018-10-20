@@ -17,8 +17,8 @@ from scipy import linalg
 import scipy as sp
 from sklearn import linear_model
 import numpy as np
-from utils import ELU, sigmoid, stochastic_gradient_descent, standard_gradient_descent,
-mini_batch_gradient_descent, cost_function
+import Costfunction
+from gradientmethods import stochastic_gradient_descent, standard_gradient_descent, mini_batch_gradient_descent
 
 class OLS:
     """The ordinary least squares algorithm"""
@@ -72,8 +72,6 @@ class Ridge:
         #u,s,vh = np.linalg.svd(X, full_matrices = False)
         #s = np.identity(len(s))*s
         #self.coef_ = X.T@y@np.linalg.inv(X.T@X + self.lmd*np.identity(X.shape[1]))
-
-
 
     def predict(self, X):
         """Aggregate model predictions."""
@@ -135,7 +133,8 @@ class LogisticRegression(object):
         Parameters
         ----------
         X : {array-like}, shape = [n_samples, n_features]
-          Training vectors, where n_samples is the number of samples and
+          Training vectors, where n_samples is the numb
+          er of samples and
           n_features is the number of features.
         y : array-like, shape = [n_samples]
           Target values.
@@ -146,10 +145,10 @@ class LogisticRegression(object):
 
         """
 
-        costfunc = {
-            'ols' = cost_function("ols", y),
-            'ridge' = cost_function("ridge", y),
-            'lasso' = cost_function("lasso", y),
+        func = {
+            'ols' = Costfunction.Cost_OLS,
+            'ridge' = Costfunction.Cost_Ridge,
+            'lasso' = Costfunction.Cost_Lasso,
         }
 
         #initialization weights to be random numbers from -0.7 to 0.7
@@ -158,26 +157,22 @@ class LogisticRegression(object):
         #self.w_ = np.random.rand(-0.7, 0.7, )
         self.cost_ = []
 
-        for i in range(self.n_iter):
+        costfunc = func[key](self.eta, self.w, self.lmd)
 
+        for i in range(self.n_iter):
             # Linar combination of weights and x'es
-            net_input = np.dot(X, self.w_[1:]) + self.w_[0]
-            output = self.activation(net_input)
+            input = np.dot(X, self.w_[1:]) + self.w_[0]
+            costfunc.activiation(input, "sigmoid")
+
+            output = self.activation(input)
             errors = (y - output)
 
+            # standard gradient descent.
             self.w_[1:] += self.eta * X.T.dot(errors) # X.T@y is the gradient.
             self.w_[0] += self.eta * errors.sum() # bias
-            # note that we compute the logistic `cost` now
-            # instead of the sum of squared errors cost
 
-            #grad_ols = X.T.dot(errors)
-            #grad_ridge = X.T.dot(errors) + lmd*w[1:] # double check output
-            #grad_lasso = X.T.dot(errors) + lmd # double check
-
-            cost_ols = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output)))
-            #cost_ridge = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))) + lmd*output**2
-            #cost_lasso = -y.dot(np.log(output)) - ((1 - y).dot(np.log(1 - output))) + lmd*abs(output)
-            self.cost_.append(cost_ols)
+            cost_ = costfunc.calculate()
+            self.cost_.append(cost_)
         return self
 
     def net_input(self, X):
@@ -187,6 +182,7 @@ class LogisticRegression(object):
     # if wwe update this one to take a activation function as input we can make it objectiorented.
     def activation(self, z):
         """Compute logistic sigmoid activation"""
+        # np clip tvinger X@w to be in the range -250 to 250
         return 1. / (1. + np.exp(-np.clip(z, -250, 250)))
 
     def predict(self, X):
