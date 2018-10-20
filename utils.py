@@ -3,26 +3,6 @@ from scipy import stats
 import scipy.stats as st
 import matplotlib.pyplot as plt
 
-def generateDesignmatrix(p, x, y):
-    m = int((p**2+3*p+2)/2)  # returnerer heltall for p = [1:5]
-    X = np.zeros((len(x), m))
-    X[:, 0] = 1
-    counter = 1
-    for i in range(1, p+1):
-        for j in range(i+1):
-            X[:, counter] = x**(i-j) * y**j
-            counter += 1
-    return X
-
-
-def franke_function(x, y):
-    term1 = 0.75*np.exp(-(0.25*(9*x-2)**2) - 0.25*((9*y-2)**2))
-    term2 = 0.75*np.exp(-((9*x+1)**2)/49.0 - 0.1*(9*y+1))
-    term3 = 0.5*np.exp(-(9*x-7)**2/4.0 - 0.25*((9*y-3)**2))
-    term4 = -0.2*np.exp(-(9*x-4)**2 - (9*y-7)**2)
-    return term1 + term2 + term3 + term4
-
-
 def bootstrap(X, z, random_state):
 
     # For random randint
@@ -108,19 +88,3 @@ def ci(x):
 def error(y_test, y_pred):
     square_diff =  [np.square(y_test - y_pred[i]) for i in range(np.shape(y_pred)[0])]
     return np.mean( np.mean(square_diff ))
-
-
-
-def svd(A):
-    " returns the singular value decomposition of a matrix A = U@D@V.T"
-    " Sort singular values in decrending order "
-    # calculate eigenvalues and eigenvectores.
-    nrows, ncols = np.shape(A)
-    u,V = np.linalg.eig(A.T@A)
-    # u is a vector of eigenvalues
-    # v is a vecort of eigenvectores.
-    s = np.sqrt(u)
-    D = np.identity(ncols)*s
-    # D-1 is equal to 1/dii for all elements in D.
-    U = A@V@np.linalg.inv(D)
-    return U, u, V
