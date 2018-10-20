@@ -1,6 +1,6 @@
 import numpy as np
 
-class steepestDescent:
+class SteepestDescent:
     """Steepest descent
 
     PARAMETERS:
@@ -45,13 +45,13 @@ class steepestDescent:
         max_iter = self.n_iter
 
         # residuals
-        r = 1  # TODO: initialize this in a better way
+        cost = 1  # TODO: initialize this in a better way
 
         # Collect the cost values in a list to check whether the algorithm converged after training
         self.cost_ = []
 
         i = 0
-        while i < max_iter or r >= self.tolerance:
+        while i < max_iter or cost >= self.tolerance:
             net_input = np.dot(X, self.w_[1:]) + self.w_[0]
             output = self.activation(net_input)
             r = (y - output)
