@@ -1,72 +1,65 @@
-@abstract
+# Would prefer to make this an abstract class.
+import numpy as np
+
 class Costfunctions:
-    def __init__(eta, w, lmd):
+    def __init__(self, eta, w, lmd):
         self.w = w,
         self.eta = eta,
         self.lmd = lmd,
+        self.p = None
 
-    def error(y):
+    def r(self, y): # resuduals.
         return y-self.p
 
-    def update_weights(new):
+    def update_weights(self, new):
         self.w = new
 
-    def sigmoid(Xw):
-        return 1. / (1. + np.exp(-np.clip(Xw, -250, 250)))
+    def activation(self, Xw, key):
+        if (key == "sigmoid"):
+            self.p = 1. / (1. + np.exp(-np.clip(Xw, -250, 250)))
+            return self.p
+        elif(key == "elu"):
+            return 0
 
-    def ELU():
-        pass
+class Cost_OLS(Costfunctions):
 
-    # Two types  of optimizer:
-    def stochastic_gradient_descent(eta, n_iter):
-        pass
-
-    def standard_gradient_descent(eta, n_epochs, t0, t1):
-        pass
-
-    def mini_batch_gradient_descent(eta, n_epochs, batch_size):
-        pass
-
-
-class Cost_OLS("Costfunctions"):
-
-    def __init__(eta, w, lmd):
+    def __init__(self, eta, w, lmd):
         self.w = w,
         self.eta = eta,
         self.lmd = lmd,
 
-    def compute(X):
-        self.p = sigmoid(X)
+    def calculate(self, X, y, key = "sigmoid"):
+        self.p = self.activation(X, key)
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p)))
 
-    def grad(X):
+    def grad(self, X):
         return X.T.dot(error())
 
 
-class Cost_Ridge("Costfunctions"):
+class Cost_Ridge(Costfunctions):
 
-    def __init__(eta, w, lmd):
+    def __init__(self, eta, w, lmd):
         self.w = w,
         self.eta = eta,
         self.lmd = lmd,
 
-    def compute(X):
-        self.p = sigmoid(X)
+    def calculate(self, X, y, key = "sigmoid"):
+        self.p = self.activation(X, key)
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd*self.w[1:] + self.w[0]
 
-    def grad(X):
+    def grad(self, X):
         return X.T.dot(error()) + self.lmd*w[1:] + w[0]
 
-class Cost_Lasso("Costfunctions"):
+class Cost_Lasso(Costfunctions):
 
-    def __init__(eta, w, lmd):
+    def __init__(self, eta, w, lmd):
         self.w = w,
         self.eta = eta,
         self.lmd = lmd,
 
-    def compute(X, y):
-        self.p = sigmoid(X)
+    def calculate(self, X, y, key = "sigmoid"):
+        self.p = self.activation(X, "sigmoid")
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd
 
-    def grad(X):
+    def grad(self, X):
         return X.T.dot(error()) + self.lmd
