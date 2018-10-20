@@ -17,7 +17,7 @@ from scipy import linalg
 import scipy as sp
 from sklearn import linear_model
 import numpy as np
-import Costfunction
+import Costfunctions
 from gradientmethods import stochastic_gradient_descent, standard_gradient_descent, mini_batch_gradient_descent
 
 class OLS:
@@ -123,9 +123,9 @@ class LogisticRegression(object):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
-        #self.cost_ = cost # initialization of the cost_function
         self.key = key
         self.lmd = lmd
+        self.w_ = None
 
     def fit(self, X, y):
         """ Fit training data.
@@ -146,9 +146,9 @@ class LogisticRegression(object):
         """
 
         func = {
-            'ols' = Costfunction.Cost_OLS,
-            'ridge' = Costfunction.Cost_Ridge,
-            'lasso' = Costfunction.Cost_Lasso,
+            'ols' : Costfunctions.Cost_OLS,
+            'ridge' : Costfunctions.Cost_Ridge,
+            'lasso' : Costfunctions.Cost_Lasso,
         }
 
         #initialization weights to be random numbers from -0.7 to 0.7
@@ -157,7 +157,7 @@ class LogisticRegression(object):
         #self.w_ = np.random.rand(-0.7, 0.7, )
         self.cost_ = []
 
-        costfunc = func[key](self.eta, self.w, self.lmd)
+        costfunc = func[self.key](self.eta, self.w_, self.lmd)
 
         for i in range(self.n_iter):
             # Linar combination of weights and x'es
