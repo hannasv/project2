@@ -1,11 +1,14 @@
 # Would prefer to make this an abstract class.
+import numpy as np
+
 class Costfunctions:
     def __init__(self, eta, w, lmd):
         self.w = w,
         self.eta = eta,
         self.lmd = lmd,
+        self.p = None
 
-    def error(self, y):
+    def r(self, y): # resuduals.
         return y-self.p
 
     def update_weights(self, new):
@@ -13,7 +16,8 @@ class Costfunctions:
 
     def activation(self, Xw, key):
         if (key == "sigmoid"):
-            return 1. / (1. + np.exp(-np.clip(Xw, -250, 250)))
+            self.p = 1. / (1. + np.exp(-np.clip(Xw, -250, 250)))
+            return self.p
         elif(key == "elu"):
             return 0
 
@@ -24,7 +28,7 @@ class Cost_OLS(Costfunctions):
         self.eta = eta,
         self.lmd = lmd,
 
-    def compute(self, X, key = "sigmoid"):
+    def calculate(self, X, y, key = "sigmoid"):
         self.p = self.activation(X, key)
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p)))
 
@@ -39,7 +43,7 @@ class Cost_Ridge(Costfunctions):
         self.eta = eta,
         self.lmd = lmd,
 
-    def compute(self, X, key = "sigmoid"):
+    def calculate(self, X, y, key = "sigmoid"):
         self.p = self.activation(X, key)
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd*self.w[1:] + self.w[0]
 
@@ -53,8 +57,8 @@ class Cost_Lasso(Costfunctions):
         self.eta = eta,
         self.lmd = lmd,
 
-    def compute(self, X, y):
-        self.p = activation(X)
+    def calculate(self, X, y, key = "sigmoid"):
+        self.p = self.activation(X, "sigmoid")
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd
 
     def grad(self, X):

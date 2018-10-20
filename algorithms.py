@@ -161,29 +161,21 @@ class LogisticRegression(object):
 
         for i in range(self.n_iter):
             # Linar combination of weights and x'es
-            input = np.dot(X, self.w_[1:]) + self.w_[0]
-            costfunc.activiation(input, "sigmoid")
-
-            output = self.activation(input)
-            errors = (y - output)
+            net_input = np.dot(X, self.w_[1:]) + self.w_[0]
+            output = costfunc.activation(net_input, "sigmoid")
+            errors = costfunc.r(y)
 
             # standard gradient descent.
             self.w_[1:] += self.eta * X.T.dot(errors) # X.T@y is the gradient.
             self.w_[0] += self.eta * errors.sum() # bias
 
-            cost_ = costfunc.calculate()
+            cost_ = costfunc.calculate(X, y, "sigmoid")
             self.cost_.append(cost_)
         return self
 
     def net_input(self, X):
         """Calculate net input"""
         return np.dot(X, self.w_[1:]) + self.w_[0]
-
-    # if wwe update this one to take a activation function as input we can make it objectiorented.
-    def activation(self, z):
-        """Compute logistic sigmoid activation"""
-        # np clip tvinger X@w to be in the range -250 to 250
-        return 1. / (1. + np.exp(-np.clip(z, -250, 250)))
 
     def predict(self, X):
         """Return class label after unit step"""
