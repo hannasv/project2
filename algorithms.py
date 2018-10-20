@@ -6,7 +6,7 @@
 #
 
 """
-Representations of algorithms.
+Representations of algorithms.Cat
 """
 
 __author__ = 'Hanna Svennevik', 'Paulina Tedesco'
