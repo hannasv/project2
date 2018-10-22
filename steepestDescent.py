@@ -14,8 +14,6 @@ class SteepestDescent:
             Tolerance for the error
         random_state: int
 
-
-
     ATTRIBUTES:
 
     """

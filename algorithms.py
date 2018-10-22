@@ -166,7 +166,7 @@ class LogisticRegression(object):
             errors = costfunc.r(y)
 
             # standard gradient descent.
-            self.w_[1:] += self.eta * X.T.dot(errors) # X.T@y is the gradient.
+            self.w_[1:] += self.eta * costfunc.grad(errors) # X.T@y is the gradient.
             self.w_[0] += self.eta * errors.sum() # bias
 
             cost_ = costfunc.calculate(X, y, "sigmoid")
@@ -174,11 +174,32 @@ class LogisticRegression(object):
         return self
 
     def net_input(self, X):
-        """Calculate net input"""
+        """Calculate net input --- x[0] is the bias """
         return np.dot(X, self.w_[1:]) + self.w_[0]
+
+    def descent_method(self, errors, grad, key = "steepest"):
+        # costfunc.grad(errors)
+        if (key = "steepest"):
+            self.w_[1:] += self.eta * costfunc.grad(errors) # X.T@y is the gradient.
+            self.w_[0] += self.eta * errors.sum() # bias
+        elif(key = "stochestic"):
+            #self.w_[1:] += self.eta *
+            #self.w_[0] += self.eta * errors.sum() # bias
+        elif(key = "batch"):
+            # batchsize ??? is this one Paulina
+        else:
+            print("Unvalid keyword, use: steepest, stochestic or batch.")
 
     def predict(self, X):
         """Return class label after unit step"""
         return np.where(self.net_input(X) >= 0.0, 1, 0)
         # equivalent to:
         # return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)
+
+    def activation(self, z, key = "sigmoid"):
+        if (key = "sigmoid"):
+            return 1. / (1. + np.exp(-np.clip(z, -250, 250)))
+        elif(key = "ELU"):
+            return 0
+        else:
+            print("Unvalide keyword argument. Use siogmoid or ELU for activation.")
