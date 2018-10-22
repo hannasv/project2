@@ -23,43 +23,43 @@ class Costfunctions:
 
 class Cost_OLS(Costfunctions):
 
-    def __init__(self, eta, w, lmd):
-        self.w = w,
+    def __init__(self, eta,lmd):
+        #self.w = w,
         self.eta = eta,
         self.lmd = lmd,
 
-    def calculate(self, X, y, key = "sigmoid"):
+    def calculate(self, X, y,  w, key = "sigmoid"):
         self.p = self.activation(X, key)
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p)))
 
-    def grad(self, X):
-        return X.T.dot(error())
+    def grad(self, X, errors):
+        return X.T.dot(errors)
 
 
 class Cost_Ridge(Costfunctions):
 
-    def __init__(self, eta, w, lmd):
-        self.w = w,
+    def __init__(self, eta, lmd):
+        #self.w = w,
         self.eta = eta,
         self.lmd = lmd,
 
-    def calculate(self, X, y, key = "sigmoid"):
+    def calculate(self, X, y, w, key = "sigmoid"):
         self.p = self.activation(X, key)
-        return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd*self.w[1:] + self.w[0]
+        return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd*w[1:] + w[0]
 
-    def grad(self, X):
-        return X.T.dot(error()) + self.lmd*w[1:] + w[0]
+    def grad(self, X, errors):
+        return X.T.dot(errors) + self.lmd*w[1:] + w[0]
 
 class Cost_Lasso(Costfunctions):
 
-    def __init__(self, eta, w, lmd):
-        self.w = w,
+    def __init__(self, eta, lmd):
+        #self.w = w,
         self.eta = eta,
         self.lmd = lmd,
 
-    def calculate(self, X, y, key = "sigmoid"):
+    def calculate(self, X, y, w, key = "sigmoid"):
         self.p = self.activation(X, "sigmoid")
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd
 
-    def grad(self, X):
-        return X.T.dot(error()) + self.lmd
+    def grad(self, X, errors):
+        return X.T.dot(errors) + self.lmd

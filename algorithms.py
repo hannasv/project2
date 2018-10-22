@@ -157,19 +157,21 @@ class LogisticRegression(object):
         #self.w_ = np.random.rand(-0.7, 0.7, )
         self.cost_ = []
 
-        costfunc = func[self.key](self.eta, self.w_, self.lmd)
+        costfunc = func[self.key](self.eta, self.lmd)
 
         for i in range(self.n_iter):
             # Linar combination of weights and x'es
             net_input = np.dot(X, self.w_[1:]) + self.w_[0]
             output = costfunc.activation(net_input, "sigmoid")
             errors = costfunc.r(y)
-
+            gradient = costfunc.grad(X, errors)
             # standard gradient descent.
-            self.w_[1:] += self.eta * costfunc.grad(errors) # X.T@y is the gradient.
-            self.w_[0] += self.eta * errors.sum() # bias
+            #self.w_[1:] += self.eta * costfunc.grad(errors) # X.T@y is the gradient.
+            #self.w_[0] += self.eta * errors.sum() # bias
 
-            cost_ = costfunc.calculate(X, y, "sigmoid")
+            self.descent_method(errors, gradient, "steepest")
+
+            cost_ = costfunc.calculate(X, y, "ELU")
             self.cost_.append(cost_)
         return self
 
@@ -179,14 +181,17 @@ class LogisticRegression(object):
 
     def descent_method(self, errors, grad, key = "steepest"):
         # costfunc.grad(errors)
-        if (key = "steepest"):
-            self.w_[1:] += self.eta * costfunc.grad(errors) # X.T@y is the gradient.
+        if (key == "steepest"):
+            self.w_[1:] += self.eta * grad # X.T@y is the gradient.
             self.w_[0] += self.eta * errors.sum() # bias
-        elif(key = "stochestic"):
+
+        elif(key == "stochestic"):
             #self.w_[1:] += self.eta *
             #self.w_[0] += self.eta * errors.sum() # bias
-        elif(key = "batch"):
+            print("stochastic is not implemented yet")
+        elif(key == "batch"):
             # batchsize ??? is this one Paulina
+            print("mini batch is not implemented yet")
         else:
             print("Unvalid keyword, use: steepest, stochestic or batch.")
 
@@ -195,11 +200,3 @@ class LogisticRegression(object):
         return np.where(self.net_input(X) >= 0.0, 1, 0)
         # equivalent to:
         # return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)
-
-    def activation(self, z, key = "sigmoid"):
-        if (key = "sigmoid"):
-            return 1. / (1. + np.exp(-np.clip(z, -250, 250)))
-        elif(key = "ELU"):
-            return 0
-        else:
-            print("Unvalide keyword argument. Use siogmoid or ELU for activation.")
