@@ -3,18 +3,16 @@ import numpy as np
 class SteepestDescent:
     """Steepest descent
 
-    PARAMETERS:
-        gradient: float
-            gradient of the cost function
-        eta: float
-            Learning rate (between 0.0 and 1.0)
-        n_iter: int
-            Number of iterations over the training set
-        tolerance: float
-            Tolerance for the error
-        random_state: int
-
-
+        PARAMETERS:
+            gradient: float
+                gradient of the cost function
+            eta: float
+                Learning rate (between 0.0 and 1.0)
+            n_iter: int
+                Number of iterations over the training set
+            tolerance: float
+                Tolerance for the error
+            random_state: int
 
     ATTRIBUTES:
 

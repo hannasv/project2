@@ -105,11 +105,12 @@ class LogisticRegression(object):
     ------------
     eta : float
       Learning rate (between 0.0 and 1.0)
-    n_iter : int
+    n_iter : int (defalt 50)
       Passes over the training dataset.
     random_state : int
       Random number generator seed for random weight
       initialization.
+     lmd: penalty
 
 
     Attributes
@@ -119,13 +120,14 @@ class LogisticRegression(object):
     cost_ : list
       Logistic cost function value in each epoch.
     """
-    def __init__(self, eta, n_iter, random_state, key, lmd):
+    def __init__(self, eta, n_iter = 50, random_state, key, lmd = 0, tolerance=1e-14):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
         self.key = key
         self.lmd = lmd
         self.w_ = None
+        self.tol = tolerance
 
     def fit(self, X, y):
         """ Fit training data.
@@ -157,25 +159,38 @@ class LogisticRegression(object):
         #self.w_ = np.random.rand(-0.7, 0.7, )
         self.cost_ = []
 
-        costfunc = func[self.key](self.eta, self.w_, self.lmd)
+        costfunc = func[self.key](self.eta, self.lmd)
+        max_iter = self.n_iter
 
-        for i in range(self.n_iter):
-            # Linar combination of weights and x'es
+        while (i < max_iter or cost >= self.tol):
+            # Computing the linar combination of x'es and weights.
             net_input = np.dot(X, self.w_[1:]) + self.w_[0]
             output = costfunc.activation(net_input, "sigmoid")
-            errors = costfunc.r(y)
-
-            # standard gradient descent.
-            self.w_[1:] += self.eta * X.T.dot(errors) # X.T@y is the gradient.
-            self.w_[0] += self.eta * errors.sum() # bias
-
-            cost_ = costfunc.calculate(X, y, "sigmoid")
+            errors = costfunc.r(y) # calculating the residuals (y-p)
+            # calculating the gradient of this particular costfunction
+            gradient = costfunc.grad(X, self.w_, errors)
+            self.descent_method(errors, gradient, "steepest")
+            cost_ = costfunc.calculate(X, y, self.w_,"sigmoid")
             self.cost_.append(cost_)
         return self
 
-    def net_input(self, X):
-        """Calculate net input"""
-        return np.dot(X, self.w_[1:]) + self.w_[0]
+    def descent_method(self, errors, grad, key = "steepest"):
+        # costfunc.grad(errors)
+        if (key == "steepest"):
+            self.w_[1:] += self.eta * grad
+            self.w_[0] += self.eta * errors.sum() # bias
+
+        elif(key == "stochestic"):
+            #self.w_[1:] += self.eta *
+            #self.w_[0] += self.eta * errors.sum() # bias
+            print("stochastic is not implemented yet")
+            #self.w_[1:] += self.eta *
+            #self.w_[0] += self.eta * errors.sum() # bias
+        elif(key == "batch"):
+            # batchsize ??? is this one Paulina
+            print("mini batch is not implemented yet")
+        else:
+            print("Unvalid keyword, use: steepest, stochestic or batch.")
 
     def predict(self, X):
         """Return class label after unit step"""
