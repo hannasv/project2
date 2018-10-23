@@ -23,7 +23,7 @@ class Costfunctions:
 
 class Cost_OLS(Costfunctions):
 
-    def __init__(self, eta,lmd):
+    def __init__(self, eta, lmd = 0):
         #self.w = w,
         self.eta = eta,
         self.lmd = lmd,
@@ -32,13 +32,13 @@ class Cost_OLS(Costfunctions):
         self.p = self.activation(X, key)
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p)))
 
-    def grad(self, X, errors):
+    def grad(self, X, w, errors):
         return X.T.dot(errors)
 
 
 class Cost_Ridge(Costfunctions):
 
-    def __init__(self, eta, lmd):
+    def __init__(self, eta, lmd = 0.1):
         #self.w = w,
         self.eta = eta,
         self.lmd = lmd,
@@ -47,7 +47,7 @@ class Cost_Ridge(Costfunctions):
         self.p = self.activation(X, key)
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd*w[1:] + w[0]
 
-    def grad(self, X, errors):
+    def grad(self, X, w,errors):
         return X.T.dot(errors) + self.lmd*w[1:] + w[0]
 
 class Cost_Lasso(Costfunctions):
@@ -61,5 +61,5 @@ class Cost_Lasso(Costfunctions):
         self.p = self.activation(X, "sigmoid")
         return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd
 
-    def grad(self, X, errors):
+    def grad(self, X,w, errors):
         return X.T.dot(errors) + self.lmd
