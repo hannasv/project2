@@ -53,7 +53,9 @@ class Cost_Ridge(Costfunctions):
     def calculate(self, X, y, w, key = "sigmoid"):
         #net_input = np.dot(X, self.w_[1:]) + self.w_[0]
         #self.p = self.activation(X, key)
-        return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + self.lmd*w[1:] + w[0]
+        l2term = L2_term = (self.lmd * (np.sum(self.w_[1] ** 2.) + np.sum(self.w_[0] ** 2.)))
+        return -y.dot(np.log(self.p)) - ((1 - y).dot(np.log(1 - self.p))) + l2term
+        #+ self.lmd*w[1:] + w[0]
 
     def grad(self, X, w,errors):
         return X.T.dot(errors) + self.lmd*w[1:] + w[0]
