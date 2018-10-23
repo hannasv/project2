@@ -120,7 +120,7 @@ class LogisticRegression(object):
     cost_ : list
       Logistic cost function value in each epoch.
     """
-    def __init__(self, eta, n_iter = 50, random_state, key, lmd = 0, tolerance=1e-14):
+    def __init__(self, eta, random_state, key, n_iter = 50, lmd = 0, tolerance=1e-14):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
@@ -161,7 +161,7 @@ class LogisticRegression(object):
 
         costfunc = func[self.key](self.eta, self.lmd)
         max_iter = self.n_iter
-
+        i = 0
         while (i < max_iter or cost >= self.tol):
             # Computing the linar combination of x'es and weights.
             net_input = np.dot(X, self.w_[1:]) + self.w_[0]
@@ -170,8 +170,9 @@ class LogisticRegression(object):
             # calculating the gradient of this particular costfunction
             gradient = costfunc.grad(X, self.w_, errors)
             self.descent_method(errors, gradient, "steepest")
-            cost_ = costfunc.calculate(X, y, self.w_,"sigmoid")
-            self.cost_.append(cost_)
+            cost = costfunc.calculate(X, y, self.w_)
+            self.cost_.append(cost)
+            i+=1
         return self
 
     def descent_method(self, errors, grad, key = "steepest"):
@@ -194,6 +195,7 @@ class LogisticRegression(object):
 
     def predict(self, X):
         """Return class label after unit step"""
-        return np.where(self.net_input(X) >= 0.0, 1, 0)
+        net_input = np.dot(X, self.w_[1:]) + self.w_[0]
+        return np.where(net_input >= 0.0, 1, 0)
         # equivalent to:
         # return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)
