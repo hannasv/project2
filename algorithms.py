@@ -158,11 +158,11 @@ class LogisticRegression(object):
         self.w_ = rgen.normal(loc=0.0, scale=0.7, size=1 + X.shape[1])
         #self.w_ = np.random.rand(-0.7, 0.7, )
         self.cost_ = []
-
         costfunc = func[self.key](self.eta, self.lmd)
         max_iter = self.n_iter
         i = 0
-        while (i < max_iter or cost >= self.tol):
+        #cost = 1
+        while (i < max_iter):# and cost >= self.tol
             # Computing the linar combination of x'es and weights.
             net_input = np.dot(X, self.w_[1:]) + self.w_[0]
             output = costfunc.activation(net_input, "sigmoid")
@@ -172,7 +172,7 @@ class LogisticRegression(object):
             self.descent_method(errors, gradient, "steepest")
             cost = costfunc.calculate(X, y, self.w_)
             self.cost_.append(cost)
-            i+=1
+            i=i+1
         return self
 
     def descent_method(self, errors, grad, key = "steepest"):
