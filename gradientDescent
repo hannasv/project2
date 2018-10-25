@@ -61,10 +61,10 @@ class SteepestDescent:
         for epoch in range(self.n_epochs):
             for i in range(self.m):
                 random_index = np.random.randint(self.m)
-                xi = xb[random_index:random_index + 1]  # define x
+                xi = X[random_index:random_index + 1]
                 yi = y[random_index:random_index + 1]
                 gradients = 2 * xi.T.dot(xi.dot(theta) - yi)
-                eta = learning_schedule(epoch * m + i) # define this
+                eta = self.learning_schedule(epoch * self.m + i)
                 theta = theta - eta * gradients
         print("theta from own sdg")
         print(theta)
