@@ -120,7 +120,7 @@ class LogisticRegression(object):
     cost_ : list
       Logistic cost function value in each epoch.
     """
-    def __init__(self, eta, random_state, key, n_iter = 50, lmd = 0, tolerance=1e-14):
+    def __init__(self, eta, random_state, key, n_iter = 100, batch_size = 10, lmd = 0, tolerance=1e-14):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
@@ -158,11 +158,11 @@ class LogisticRegression(object):
         self.w_ = rgen.normal(loc=0.0, scale=0.7, size=1 + X.shape[1])
         #self.w_ = np.random.rand(-0.7, 0.7, )
         self.cost_ = []
-
         costfunc = func[self.key](self.eta, self.lmd)
         max_iter = self.n_iter
         i = 0
-        while (i < max_iter or cost >= self.tol):
+        #cost = 1
+        while (i < max_iter):# and cost >= self.tol
             # Computing the linar combination of x'es and weights.
             net_input = np.dot(X, self.w_[1:]) + self.w_[0]
             output = costfunc.activation(net_input, "sigmoid")
@@ -172,7 +172,7 @@ class LogisticRegression(object):
             self.descent_method(errors, gradient, "steepest")
             cost = costfunc.calculate(X, y, self.w_)
             self.cost_.append(cost)
-            i+=1
+            i=i+1
         return self
 
     def descent_method(self, errors, grad, key = "steepest"):
@@ -181,17 +181,21 @@ class LogisticRegression(object):
             self.w_[1:] += self.eta * grad
             self.w_[0] += self.eta * errors.sum() # bias
 
-        elif(key == "stochestic"):
-            #self.w_[1:] += self.eta *
-            #self.w_[0] += self.eta * errors.sum() # bias
-            print("stochastic is not implemented yet")
-            #self.w_[1:] += self.eta *
-            #self.w_[0] += self.eta * errors.sum() # bias
-        elif(key == "batch"):
-            # batchsize ??? is this one Paulina
-            print("mini batch is not implemented yet")
+        elif(key == "sgd"):
+            #self.beta = np.random.randn(2, 1)
+            for epoch in range(self.n_epochs):
+                for i in range(self.batch_size):
+                    random_index = np.random.randint(self.batch_size)
+                    xi = X[random_index:random_index + 1]
+                    yi = y[random_index:random_index + 1]
+
+                    gradients = 2 * xi.T.dot(xi.dot(theta) - yi)
+                    #eta = self.learning_schedule(epoch * self.m + i)
+                    theta = theta - self.eta * gradients
+            print("theta from own sdg" + str(theta))
+
         else:
-            print("Unvalid keyword, use: steepest, stochestic or batch.")
+            print("Unvalid keyword, use: steepest or sgd.")
 
     def predict(self, X):
         """Return class label after unit step"""
@@ -199,3 +203,6 @@ class LogisticRegression(object):
         return np.where(net_input >= 0.0, 1, 0)
         # equivalent to:
         # return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)
+    def learning_schedule(t):
+        t0, t1 = 5, 50
+        return t0 / (t + t1)
