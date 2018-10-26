@@ -159,38 +159,44 @@ class LogisticRegression(object):
         #self.w_ = np.random.rand(-0.7, 0.7, )
         self.cost_ = []
         costfunc = func[self.key](self.eta, self.lmd)
-        max_iter = self.n_iter
-        i = 0
-        #cost = 1
-        while (i < max_iter):# and cost >= self.tol
-            # Computing the linar combination of x'es and weights.
-            net_input = np.dot(X, self.w_[1:]) + self.w_[0]
-            output = costfunc.activation(net_input, "sigmoid")
-            errors = costfunc.r(y) # calculating the residuals (y-p)
-            # calculating the gradient of this particular costfunction
-            gradient = costfunc.grad(X, self.w_, errors)
-            self.descent_method(errors, gradient, "steepest")
-            cost = costfunc.calculate(X, y, self.w_)
-            self.cost_.append(cost)
-            i=i+1
+
+        self.descent_method(costfunc,X,y, "steepest")
+
         return self
 
-    def descent_method(self, errors, grad, key = "steepest"):
+    def descent_method(self, costfunc,X,y, key = "steepest"):
         # costfunc.grad(errors)
         if (key == "steepest"):
-            self.w_[1:] += self.eta * grad
-            self.w_[0] += self.eta * errors.sum() # bias
+            #self.w_[1:] += self.eta * grad
+            #self.w_[0] += self.eta * errors.sum() # bias
+            max_iter = self.n_iter
+            i = 0
+            while (i < max_iter):# and cost >= self.tol
+                # Computing the linar combination of x'es and weights.
+                net_input = np.dot(X, self.w_[1:]) + self.w_[0]
+                output = costfunc.activation(net_input, "sigmoid")
+                errors = costfunc.r(y) # calculating the residuals (y-p)
+                # calculating the gradient of this particular costfunction
+                gradient = costfunc.grad(X, self.w_, errors)
+                self.w_[1:] = self.w_[1:] +  self.eta * gradient
+                self.w_[0] = self.w_[0] + self.eta * errors.sum() # bias
+                cost = costfunc.calculate(X, y, self.w_)
+                self.cost_.append(cost)
+                i=i+1
+
 
         elif(key == "sgd"):
             #self.beta = np.random.randn(2, 1)
             for epoch in range(self.n_epochs):
                 for i in range(self.batch_size):
+                    """Choosing the batch"""
                     random_index = np.random.randint(self.batch_size)
                     xi = X[random_index:random_index + 1]
                     yi = y[random_index:random_index + 1]
-
+                    # Calculating the gradient.
                     gradients = 2 * xi.T.dot(xi.dot(theta) - yi)
                     #eta = self.learning_schedule(epoch * self.m + i)
+                    grad = costfunc.grad()
                     theta = theta - self.eta * gradients
             print("theta from own sdg" + str(theta))
 
