@@ -66,8 +66,7 @@ class SteepestDescent:
                 gradients = 2 * xi.T.dot(xi.dot(theta) - yi)
                 eta = self.learning_schedule(epoch * self.m + i)
                 theta = theta - eta * gradients
-        print("theta from own sdg")
-        print(theta)
+        print("theta from own sdg" + str(theta))
 
         return self
 

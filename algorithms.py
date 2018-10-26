@@ -120,7 +120,7 @@ class LogisticRegression(object):
     cost_ : list
       Logistic cost function value in each epoch.
     """
-    def __init__(self, eta, random_state, key, n_iter = 50, lmd = 0, tolerance=1e-14):
+    def __init__(self, eta, random_state, key, n_iter = 100, batch_size = 10, lmd = 0, tolerance=1e-14):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
@@ -181,17 +181,21 @@ class LogisticRegression(object):
             self.w_[1:] += self.eta * grad
             self.w_[0] += self.eta * errors.sum() # bias
 
-        elif(key == "stochestic"):
-            #self.w_[1:] += self.eta *
-            #self.w_[0] += self.eta * errors.sum() # bias
-            print("stochastic is not implemented yet")
-            #self.w_[1:] += self.eta *
-            #self.w_[0] += self.eta * errors.sum() # bias
-        elif(key == "batch"):
-            # batchsize ??? is this one Paulina
-            print("mini batch is not implemented yet")
+        elif(key == "sgd"):
+            #self.beta = np.random.randn(2, 1)
+            for epoch in range(self.n_epochs):
+                for i in range(self.batch_size):
+                    random_index = np.random.randint(self.batch_size)
+                    xi = X[random_index:random_index + 1]
+                    yi = y[random_index:random_index + 1]
+
+                    gradients = 2 * xi.T.dot(xi.dot(theta) - yi)
+                    #eta = self.learning_schedule(epoch * self.m + i)
+                    theta = theta - self.eta * gradients
+            print("theta from own sdg" + str(theta))
+
         else:
-            print("Unvalid keyword, use: steepest, stochestic or batch.")
+            print("Unvalid keyword, use: steepest or sgd.")
 
     def predict(self, X):
         """Return class label after unit step"""
@@ -199,3 +203,6 @@ class LogisticRegression(object):
         return np.where(net_input >= 0.0, 1, 0)
         # equivalent to:
         # return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)
+    def learning_schedule(t):
+        t0, t1 = 5, 50
+        return t0 / (t + t1)

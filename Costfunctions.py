@@ -61,7 +61,7 @@ class Cost_Ridge(Costfunctions):
 
         # penalty on bias to?
         l2term =  self.lmd *np.sum(w[1:] ** 2)# + np.sum(w[0] ** 2))
-        return -y.dot(np.log(self.p+ 1e-12)) - ((1 - y).dot(np.log(1 - self.p) + 1e-12)) + l2term
+        return -y.dot(np.log(self.p+ 1e-12)) - ((1 - y).dot(np.log(1 - self.p+ 1e-12) )) + l2term
         #+ self.lmd*w[1:] + w[0]
 
     # returns a array
