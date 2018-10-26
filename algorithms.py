@@ -18,7 +18,6 @@ import scipy as sp
 from sklearn import linear_model
 import numpy as np
 import Costfunctions
-from gradientmethods import stochastic_gradient_descent, standard_gradient_descent, mini_batch_gradient_descent
 
 class OLS:
     """The ordinary least squares algorithm"""

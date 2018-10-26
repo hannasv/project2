@@ -8,7 +8,7 @@ class NeuralNetMLP(object):
     ------------
     n_hidden : int (default: 30)
         Number of hidden units.
-    l2 : float (default: 0.)
+    lmd : float (default: 0.)
         Lambda value for L2-regularization.
         No regularization if l2=0. (default)
     epochs : int (default: 100)
@@ -28,7 +28,7 @@ class NeuralNetMLP(object):
       and validation accuracy for each epoch during training.
     """
     def __init__(self, n_hidden=30,
-                 l2=0., epochs=100, eta=0.001,
+                 lmd=0., epochs=100, eta=0.001,
                  shuffle=True, minibatch_size=1, seed=None):
 
         self.random = np.random.RandomState(seed)
