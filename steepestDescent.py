@@ -17,9 +17,9 @@ class SteepestDescent:
     ATTRIBUTES:
 
     """
-    def __init__(self, gradient, eta=0.1, n_iter=50, tolerance=1e-14, random_state=105):
+    def __init__(self, lmd, eta=0.1, n_iter=50, tolerance=1e-14, random_state=105):
 
-        self.gradient = gradient
+        self.lmd = lmd
         self.eta = eta
         self.n_iter = n_iter
         self.tolerance = tolerance
@@ -53,8 +53,14 @@ class SteepestDescent:
             net_input = np.dot(X, self.w_[1:]) + self.w_[0]  #
             output = self.activation(net_input)
             r = (y - output)
-            self.w_[1:] = self.w_[1:] + self.eta * X.T.dot(r)
-            self.w_[0] = self.w_[0] +self.eta * r.sum()
+
+            # Update gradient
+            gradient = 2 * (X.T.dot(X.dot(self.w_) - Y)
+                            + self.lmd * self.w_)
+
+            # TODO: sjekke at dette er rikgtig
+            self.w_[1:] = self.w_[1:] - self.eta * gradient  # Byttet + med -
+            self.w_[0] = self.w_[0] - self.eta * r.sum()
             cost = (r**2).sum() / 0.2
             self.cost_.append(cost)
 

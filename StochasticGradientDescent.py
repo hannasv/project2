@@ -4,8 +4,8 @@ class gradientDescent:
     """Steepest descent
 
         PARAMETERS:
-            gradient: float
-                gradient of the cost function
+            lmd: float
+                Regularization parameter. If lmd = 0, OLS method
             eta: float
                 Learning rate (between 0.0 and 1.0)
             n_iter: int
@@ -81,7 +81,7 @@ class gradientDescent:
                                 + self.lmd*self.w_)
                 # eta = self.learning_schedule(epoch * self.m + i) #Skal vi ha det?
                 self.w_[1:] = self.w_[1:] - self.eta * gradient
-                self.w_[0] = self.w_[0] + self.eta * r.sum()
+                self.w_[0] = self.w_[0] - self.eta * r.sum()
 
         return self
 
