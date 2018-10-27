@@ -50,7 +50,7 @@ class SteepestDescent:
 
         i = 0
         while i < max_iter or cost >= self.tolerance:
-            net_input = np.dot(X, self.w_[1:]) + self.w_[0]
+            net_input = np.dot(X, self.w_[1:]) + self.w_[0]  #
             output = self.activation(net_input)
             r = (y - output)
             self.w_[1:] = self.w_[1:] + self.eta * X.T.dot(r)

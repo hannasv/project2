@@ -46,8 +46,11 @@ class gradientDescent:
 
         rgen = np.random.RandomState(self.random_state)
         self.w_ = rgen.normal(loc=0.0, scale = 0.7, size = 1)
-        self.w_ = np.random.randn(2, 1)
+        self.w_ = np.random.randn(X.shape[1], 1)  # weight with the same size as x?
 
+        # TODO: CHECK IF WE HAVE A COLUMN WITH ONES IN X
+
+        # self.cost_ = []
         #max_iter = self.n_iter
 
 
@@ -59,7 +62,14 @@ class gradientDescent:
         #self.cost_ = []
 
         for epoch in range(self.n_epochs):
-            for i in range(self.m):
+            # initialize the total loss for the epoch
+            epochLoss = []
+
+            for (batchX, batchY) in self.next_batch(X, y, self.m):
+                net_input = net_input = np.dot(X, self.w_[1:]) + self.w_[0]
+                output = self.activation(net_input)
+
+                # TODO: continue here
                 random_index = np.random.randint(self.m)
                 xi = X[random_index:random_index + 1]
                 yi = y[random_index:random_index + 1]
@@ -69,6 +79,12 @@ class gradientDescent:
         print("theta from own sdg" + str(self.w_))
 
         return self
+
+    def next_batch(X, y, m):
+        # loop over our dataset `X` in mini-batches of size `self.m`
+        for i in np.arange(0, X.shape[0], m):
+            # yield a tuple of the current batched data and labels
+            yield (X[i:i + m], y[i:i + m])
 
     def learning_schedule(t):
         t0, t1 = 5, 50
