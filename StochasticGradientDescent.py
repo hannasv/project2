@@ -21,9 +21,9 @@ class gradientDescent:
     ATTRIBUTES:
 
     """
-    def __init__(self, gradient, n_epochs, m, eta=0.1, n_iter=50, tolerance=1e-14, random_state=105):
+    def __init__(self, lmd, n_epochs, m, eta=0.1, n_iter=50, tolerance=1e-14, random_state=105):
 
-        self.gradient = gradient
+        self.lmd = lmd
         self.n_epochs = n_epochs
         self.m = m
         self.eta = eta
@@ -77,7 +77,8 @@ class gradientDescent:
                 epoch_cost.append(cost)
 
                 # Update gradient
-                gradient = 2 * batchX.T.dot(batchX.dot(self.w_) - batchY)
+                gradient = 2 * (batchX.T.dot(batchX.dot(self.w_) - batchY)
+                                + self.lmd*self.w_)
                 # eta = self.learning_schedule(epoch * self.m + i) #Skal vi ha det?
                 self.w_[1:] = self.w_[1:] - self.eta * gradient
                 self.w_[0] = self.w_[0] + self.eta * r.sum()
