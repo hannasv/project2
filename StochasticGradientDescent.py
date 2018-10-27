@@ -50,7 +50,7 @@ class gradientDescent:
 
         # TODO: CHECK IF WE HAVE A COLUMN WITH ONES IN X
 
-        # self.cost_ = []
+        self.cost_history = []
         #max_iter = self.n_iter
 
 
@@ -61,32 +61,43 @@ class gradientDescent:
         # Collect the cost values in a list to check whether the algorithm converged after training
         #self.cost_ = []
 
+        M = X.shape[0]/self.m
+
         for epoch in range(self.n_epochs):
             # initialize the total loss for the epoch
-            epochLoss = []
+            epoch_cost = []
+            random_index = np.random.randint(self.m)
 
-            for (batchX, batchY) in self.next_batch(X, y, self.m):
-                net_input = net_input = np.dot(X, self.w_[1:]) + self.w_[0]
+            for (batchX, batchY) in self.next_batch(X, y, M):
+                net_input = np.dot(batchX, self.w_[1:]) + self.w_[0]
                 output = self.activation(net_input)
+                r = (y - output)
 
-                # TODO: continue here
-                random_index = np.random.randint(self.m)
-                xi = X[random_index:random_index + 1]
-                yi = y[random_index:random_index + 1]
-                gradients = 2 * xi.T.dot(xi.dot(self.w_) - yi)
-                eta = self.learning_schedule(epoch * self.m + i)
-                self.w_ = self.w_- eta * gradients
-        print("theta from own sdg" + str(self.w_))
+                cost = np.sum(r ** 2)  # skal vi beregne det sånn? det gjorde vi ikke med steepest.
+                epoch_cost.append(cost)
+
+                # Update gradient
+                gradient = 2 * batchX.T.dot(batchX.dot(self.w_) - batchY)
+                # eta = self.learning_schedule(epoch * self.m + i) #Skal vi ha det?
+                self.w_[1:] = self.w_[1:] - self.eta * gradient
+                self.w_[0] = self.w_[0] + self.eta * r.sum()
 
         return self
 
-    def next_batch(X, y, m):
-        # loop over our dataset `X` in mini-batches of size `self.m`
-        for i in np.arange(0, X.shape[0], m):
+    # TODO write a function for the gradient?
+
+    def next_batch(X, y, M):
+        # M is the size of the minibatches, M=n/m
+        # loop over our dataset `X` in mini-batches of size `M`
+        for i in np.arange(0, X.shape[0], M):
+            # random?
+            # for i in range(M):
+            #k = np.random.randint(m)  # Pick the k-th minibatch at random
             # yield a tuple of the current batched data and labels
-            yield (X[i:i + m], y[i:i + m])
+            yield (X[i:i + M], y[i:i + M])
 
     def learning_schedule(t):
+        # skal vi ha det? Tror vi sa nei
         t0, t1 = 5, 50
         return t0 / (t + t1)
 

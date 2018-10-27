@@ -70,6 +70,8 @@ class gradientDescent:
 
         return self
 
+
+
     def learning_schedule(t):
         t0, t1 = 5, 50
         return t0 / (t + t1)
