@@ -3,6 +3,8 @@ import numpy as np
 class gradientDescent:
     """Steepest descent
 
+    Search for the minimum in cost_history and find its corresponding weight in w_history
+
         PARAMETERS:
             lmd: float
                 Regularization parameter. If lmd = 0, OLS method
@@ -21,13 +23,12 @@ class gradientDescent:
     ATTRIBUTES:
 
     """
-    def __init__(self, lmd, n_epochs, m, eta=0.1, n_iter=50, tolerance=1e-14, random_state=105):
+    def __init__(self, lmd, n_epochs, m, eta=0.1, tolerance=1e-14, random_state=105):
 
         self.lmd = lmd
         self.n_epochs = n_epochs
         self.m = m
         self.eta = eta
-        self.n_iter = n_iter
         self.tolerance = tolerance
         self.random_state = random_state
 
@@ -48,25 +49,18 @@ class gradientDescent:
         self.w_ = rgen.normal(loc=0.0, scale = 0.7, size = 1)
         self.w_ = np.random.randn(X.shape[1], 1)  # weight with the same size as x?
 
-        # TODO: CHECK IF WE HAVE A COLUMN WITH ONES IN X
 
         self.cost_history = []
-        #max_iter = self.n_iter
-
-
-
-        # residuals
-        cost = 1  # TODO: initialize this in a better way
+        self.w_history
 
         # Collect the cost values in a list to check whether the algorithm converged after training
-        #self.cost_ = []
 
         M = X.shape[0]/self.m
 
         for epoch in range(self.n_epochs):
             # initialize the total loss for the epoch
             epoch_cost = []
-            random_index = np.random.randint(self.m)
+            epoch_w_ =[]
 
             for (batchX, batchY) in self.next_batch(X, y, M):
                 net_input = np.dot(batchX, self.w_[1:]) + self.w_[0]
@@ -82,6 +76,12 @@ class gradientDescent:
                 # eta = self.learning_schedule(epoch * self.m + i) #Skal vi ha det?
                 self.w_[1:] = self.w_[1:] - self.eta * gradient
                 self.w_[0] = self.w_[0] - self.eta * r.sum()
+
+                epoch_w_.append(self.w_)
+
+            self.cost_history.append(epoch_cost)
+            self.w_history.append(epoch_w_)
+
 
         return self
 
