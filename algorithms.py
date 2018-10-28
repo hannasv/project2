@@ -119,17 +119,21 @@ class LogisticRegression(object):
     cost_ : list
       Logistic cost function value in each epoch.
     """
-    def __init__(self, eta, random_state, key, descent_method="steepest", shuffle = True, n_iter = 100, batch_size = 10, lmd = 0, tolerance=1e-14):
+    def __init__(self, eta, random_state, key, dm ="steepest", shuffle = True, n_iter = 100, batch_size = 10, epochs=100,lmd = 0, tolerance=1e-14):
         self.eta = eta
         self.n_iter = n_iter
-        self.random_state = random_state
+        self.random = np.random.RandomState(random_state)
         self.key = key
         self.lmd = lmd
         self.w_ = None
         self.b_ = None
         self.tol = tolerance
         self.shuffle = shuffle
-        self.descent_method = descent_method
+        self.dm = dm # descent method
+        self.batch_size = batch_size
+        self.epochs = epochs
+        self.eval_ = None
+
 
     def fit(self, X, y):
         """ Fit training data.
@@ -156,17 +160,18 @@ class LogisticRegression(object):
         }
 
         #initialization weights to be random numbers from -0.7 to 0.7
-        rgen = np.random.RandomState(self.random_state)
+        #rgen = np.random.RandomState(self.random_state)
         self.w_ = np.random.uniform(-0.7,0.7, size = X.shape[1])
         self.b_ = 0.0001
         self.cost_ = []
         costfunc = func[self.key](self.eta, self.lmd)
 
-        self.descent_method(costfunc,X,y, "steepest")
+        self.descent_method(costfunc,X,y)
 
         return self
 
-    def descent_method(self, costfunc, X, y, key = self.descent_method):
+    def descent_method(self, costfunc, X, y):
+        key = self.dm
         # costfunc.grad(errors)
         if (key == "steepest"):
             #self.w_[1:] += self.eta * grad
@@ -182,40 +187,40 @@ class LogisticRegression(object):
                 gradient = costfunc.log_grad(X, self.w_, errors)
 
                 """ Bytte til minus?????"""
-                self.w_ = self.w_ +  self.eta * gradient
-                self.b_ = self.b_ + self.eta * errors.sum() # bias
+                self.w_ = self.w_ -  self.eta * gradient
+                self.b_ = self.b_ - self.eta * errors.sum() # bias
                 cost = costfunc.log_calculate(X, y, self.w_)
                 self.cost_.append(cost)
                 i=i+1
 
         elif(key == "sgd"):
-            #def _minibatch_sgd(self, X_train, y_train):
-            n_samples, n_features = np.shape(X)
-            indices = np.arange(n_samples)
+            self.eval_ = {"loss_history":[]}
+            for epoch in range(self.epochs):
+                n_samples, n_features = np.shape(X)
+                indices = np.arange(n_samples)
+                epochLoss = []
 
-            if self.shuffle:
-                self.random.shuffle(indices)
+                if self.shuffle:
+                    self.random.shuffle(indices)
 
-            for idx in range(0, n_samples, self.batch_size):
+                for idx in range(0, n_samples, self.batch_size):
 
-                batch_idx = indices[idx:idx + self.batch_size]
-                net_input = np.dot(X[batch_idx], self.w_) + self.b_
-                output = costfunc.activation(net_input, "sigmoid")
-                errors = costfunc.r(y[batch_idx])
-                gradient = costfunc.grad(X[batch_idx,:], self.w_, errors)
-                #update weights
-                self.w_ = self.w_ - self.eta * gradient
-                self.b_ = self.b_ - self.eta * errors.sum()
+                    batch_idx = indices[idx:idx + self.batch_size]
+                    net_input = np.dot(X[batch_idx], self.w_) + self.b_
+                    output = costfunc.activation(net_input, "sigmoid")
+                    errors = costfunc.r(y[batch_idx])
+                    gradient = costfunc.log_grad(X[batch_idx,:], self.w_, errors)
+                    #update weights
+                    self.w_ = self.w_ - self.eta * gradient
+                    self.b_ = self.b_ - self.eta * errors.sum()
+
+                    epochLoss.append(errors.sum())
+                self.eval_["loss_history"].append(np.mean(epochLoss))
+            #print(self.eval_["loss_history"])
 
         else:
             print("Unvalid keyword, use: steepest or sgd.")
 
     def predict(self, X):
-        """Return class label after unit step"""
         net_input = np.dot(X, self.w_) + self.b_
         return np.where(net_input >= 0.0, 1, 0)
-        # equivalent to:
-        # return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)
-    def learning_schedule(t):
-        t0, t1 = 5, 50
-        return t0 / (t + t1)
