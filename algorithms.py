@@ -119,14 +119,17 @@ class LogisticRegression(object):
     cost_ : list
       Logistic cost function value in each epoch.
     """
-    def __init__(self, eta, random_state, key, n_iter = 100, batch_size = 10, lmd = 0, tolerance=1e-14):
+    def __init__(self, eta, random_state, key, descent_method="steepest", shuffle = True, n_iter = 100, batch_size = 10, lmd = 0, tolerance=1e-14):
         self.eta = eta
         self.n_iter = n_iter
         self.random_state = random_state
         self.key = key
         self.lmd = lmd
         self.w_ = None
+        self.b_ = None
         self.tol = tolerance
+        self.shuffle = shuffle
+        self.descent_method = descent_method
 
     def fit(self, X, y):
         """ Fit training data.
@@ -154,8 +157,8 @@ class LogisticRegression(object):
 
         #initialization weights to be random numbers from -0.7 to 0.7
         rgen = np.random.RandomState(self.random_state)
-        self.w_ = rgen.normal(loc=0.0, scale=0.7, size=1 + X.shape[1])
-        #self.w_ = np.random.rand(-0.7, 0.7, )
+        self.w_ = np.random.uniform(-0.7,0.7, size = X.shape[1])
+        self.b_ = 0.0001
         self.cost_ = []
         costfunc = func[self.key](self.eta, self.lmd)
 
@@ -163,7 +166,7 @@ class LogisticRegression(object):
 
         return self
 
-    def descent_method(self, costfunc,X,y, key = "steepest"):
+    def descent_method(self, costfunc, X, y, key = self.descent_method):
         # costfunc.grad(errors)
         if (key == "steepest"):
             #self.w_[1:] += self.eta * grad
@@ -172,39 +175,44 @@ class LogisticRegression(object):
             i = 0
             while (i < max_iter):# and cost >= self.tol
                 # Computing the linar combination of x'es and weights.
-                net_input = np.dot(X, self.w_[1:]) + self.w_[0]
+                net_input = np.dot(X, self.w_) + self.b_
                 output = costfunc.activation(net_input, "sigmoid")
                 errors = costfunc.r(y) # calculating the residuals (y-p)
                 # calculating the gradient of this particular costfunction
-                gradient = costfunc.grad(X, self.w_, errors)
-                self.w_[1:] = self.w_[1:] +  self.eta * gradient
-                self.w_[0] = self.w_[0] + self.eta * errors.sum() # bias
-                cost = costfunc.calculate(X, y, self.w_)
+                gradient = costfunc.log_grad(X, self.w_, errors)
+
+                """ Bytte til minus?????"""
+                self.w_ = self.w_ +  self.eta * gradient
+                self.b_ = self.b_ + self.eta * errors.sum() # bias
+                cost = costfunc.log_calculate(X, y, self.w_)
                 self.cost_.append(cost)
                 i=i+1
 
-
         elif(key == "sgd"):
-            #self.beta = np.random.randn(2, 1)
-            for epoch in range(self.n_epochs):
-                for i in range(self.batch_size):
-                    """Choosing the batch"""
-                    random_index = np.random.randint(self.batch_size)
-                    xi = X[random_index:random_index + 1]
-                    yi = y[random_index:random_index + 1]
-                    # Calculating the gradient.
-                    gradients = 2 * xi.T.dot(xi.dot(theta) - yi)
-                    #eta = self.learning_schedule(epoch * self.m + i)
-                    grad = costfunc.grad()
-                    theta = theta - self.eta * gradients
-            print("theta from own sdg" + str(theta))
+            #def _minibatch_sgd(self, X_train, y_train):
+            n_samples, n_features = np.shape(X)
+            indices = np.arange(n_samples)
+
+            if self.shuffle:
+                self.random.shuffle(indices)
+
+            for idx in range(0, n_samples, self.batch_size):
+
+                batch_idx = indices[idx:idx + self.batch_size]
+                net_input = np.dot(X[batch_idx], self.w_) + self.b_
+                output = costfunc.activation(net_input, "sigmoid")
+                errors = costfunc.r(y[batch_idx])
+                gradient = costfunc.grad(X[batch_idx,:], self.w_, errors)
+                #update weights
+                self.w_ = self.w_ - self.eta * gradient
+                self.b_ = self.b_ - self.eta * errors.sum()
 
         else:
             print("Unvalid keyword, use: steepest or sgd.")
 
     def predict(self, X):
         """Return class label after unit step"""
-        net_input = np.dot(X, self.w_[1:]) + self.w_[0]
+        net_input = np.dot(X, self.w_) + self.b_
         return np.where(net_input >= 0.0, 1, 0)
         # equivalent to:
         # return np.where(self.activation(self.net_input(X)) >= 0.5, 1, 0)

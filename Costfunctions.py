@@ -37,11 +37,10 @@ class Cost_OLS(Costfunctions):
 
     """ Normal costfunction and gradient"""
     def calculate_cost(self, X, y, w):
-        return (y-X.dot(w[1:])).T@(y-X.dot(w[1:]))
+        return (y-X.dot(w)).T@(y-X.dot(w))
 
-    def grad(self, X, y, w, errors):
-        theta=0
-        return 2 * X.T.dot(X.dot(y-w[1:]))
+    def grad(self, X,y, w):
+        return - 2 * X.T.dot( y - w.dot(X))
 
     """ Logistic costfunction and gradient"""
     def log_calculate(self, X, y,  w):
@@ -62,21 +61,21 @@ class Cost_Ridge(Costfunctions):
         self.lmd = lmd
     """ Normal costfunction and gradient"""
     def calculate_cost(self, X, y, w):
-        return (y-X.dot(w[1:])).T@(y-X.dot(w[1:])) + self.lmd*(np.sum(w[1:])**2)
+        return (y-X.dot(w)).T@(y-X.dot(w)) + self.lmd*(np.sum(w)**2)
 
     def grad(self, X, w, errors):
-        l2term =  self.lmd *np.sum(w[1:] ** 2)
-        return 2 * X.T.dot(X.dot(y-w[1:])) + l2term
+        l2term =  self.lmd *np.sum(w** 2)
+        return - 2 * X.T.dot( y - w.dot(X)) + l2term
 
     """ Logistic costfunction and gradient"""
     def log_calculate(self, X, y, w):
         # penalty on bias to?
-        l2term =  self.lmd *np.sum(w[1:] ** 2)# + np.sum(w[0] ** 2))
+        l2term =  self.lmd *np.sum(w ** 2)# + np.sum(w[0] ** 2))
         return -y.dot(np.log(self.p+ 1e-12)) - ((1 - y).dot(np.log(1 - self.p+ 1e-12) )) + l2term
 
     # returns a array
     def log_grad(self, X, w, errors):
-        return X.T.dot(errors) + 2*self.lmd*w[1:]
+        return X.T.dot(errors) + 2*self.lmd*w
 
 class Cost_Lasso(Costfunctions):
 
@@ -87,19 +86,19 @@ class Cost_Lasso(Costfunctions):
 
     """ Normal costfunction and gradient"""
     def calculate_cost(self, X, y, w):
-        l1term = self.lmd*np.sum(np.abs(w[1:]))
-        return (y-X.dot(w[1:])).T@(y-X.dot(w[1:])) + l1term
+        l1term = self.lmd*np.sum(np.abs(w))
+        return (y-X.dot(w)).T@(y-X.dot(w)) + l1term
 
-    def grad(self, X, w, errors):
-        return 2 * X.T.dot(X.dot(y-w[1:])) + self.lmd*np.sign(w[1:])
+    def grad(self, X,y, w):
+        return - 2 * X.T.dot( y - w.dot(X)) + self.lmd*np.sign(w)
 
     """ Logistic costfunction and gradient"""
     def log_calculate(self, X, y, w):
         # returns a scalar.
         #self.p = self.activation(X, "sigmoid")
-        l1term = self.lmd*np.sum(np.abs(w[1:]))
+        l1term = self.lmd*np.sum(np.abs(w))
         return -y.dot(np.log(self.p+ 1e-12)) - ((1 - y).dot(np.log(1 - self.p+1e-12))) + l1term
 
     # The derivative of a absolute value is a signfunction
     def log_grad(self, X, w, errors):
-        return X.T.dot(errors) + self.lmd*np.sign(w[1:])
+        return X.T.dot(errors) + self.lmd*np.sign(w)
