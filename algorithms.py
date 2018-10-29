@@ -133,7 +133,8 @@ class LogisticRegression(object):
         self.batch_size = batch_size
         self.epochs = epochs
         self.eval_ = None
-
+        self.cost_=None
+        self.p = None
 
     def fit(self, X, y):
         """ Fit training data.
@@ -194,6 +195,7 @@ class LogisticRegression(object):
                 i=i+1
 
         elif(key == "sgd"):
+            """ Hanna
             self.eval_ = {"loss_history":[]}
             for epoch in range(self.epochs):
                 n_samples, n_features = np.shape(X)
@@ -217,10 +219,81 @@ class LogisticRegression(object):
                     epochLoss.append(errors.sum())
                 self.eval_["loss_history"].append(np.mean(epochLoss))
             #print(self.eval_["loss_history"])
+            """
 
+            self.cost_history = []
+            self.w_history = []
+
+            # Collect the cost values in a list to check whether the algorithm converged after training
+
+            M = int(X.shape[0]/self.batch_size)
+
+            for epoch in range(self.epochs):
+                # initialize the total loss for the epoch
+                epoch_cost = []
+                epoch_w_ =[]
+                epoch_b_ =[]
+
+                for (batchX, batchY) in self.next_batch(X, y, M):
+                    """Net input goes to infinity"""
+                    net_input = np.dot(batchX, self.w_) + self.b_
+                    #print(net_input)
+                    output = self.activation(net_input ,"sigmoid")
+                    #print(output)
+                    r = (batchY - output)
+                    cost = np.sum(r ** 2)
+                    # skal vi beregne det sånn? det gjorde vi ikke med steepest.
+                    epoch_cost.append(cost)
+
+                    # Update gradient
+                    #gradient = 2 * (batchX.T.dot(batchX.dot(self.w_) - batchY)
+                    #                + self.lmd*self.w_)
+                    #
+
+                    gradient =  batchX.T.dot(r) + 2*self.lmd*self.w_
+
+
+                    # eta = self.learning_schedule(epoch * self.m + i) #Skal vi ha det?
+                    self.w_ = self.w_ - self.eta * gradient
+                    self.b_ = self.b_ - self.eta * r.sum()
+                    
+                    epoch_w_.append(self.w_)
+                    epoch_b_.append(self.b_)
+
+                self.cost_history.append(epoch_cost)
+                self.w_history.append(epoch_w_)
+            #print(self.cost_history)
         else:
             print("Unvalid keyword, use: steepest or sgd.")
 
+    @staticmethod
+    def next_batch(X, y, M):
+        # M is the size of the minibatches, M=n/m
+        # loop over our dataset `X` in mini-batches of size `M`
+        for i in np.arange(0, X.shape[0], M):
+            # random?
+            # for i in range(M):
+            #k = np.random.randint(m)  # Pick the k-th minibatch at random
+            # yield a tuple of the current batched data and labels
+            if(i+M <= X.shape[1]):
+                yield (X[i:i + M], y[i:i + M])
+            else:
+                yield (X[i:], y[i:])
+
+    def activation(self, Xw, key):
+        if (key == "sigmoid"):
+            self.p = 1. / (1. + np.exp(-np.clip(Xw, -250, 250)))
+            return self.p
+        elif(key == "ELU"):
+            if (Xw >= 0):
+                return Xw
+            else:
+                return alpha*(np.exp(Xw)-1)
+        else:
+            print("Unvalide keyword argument. Use siogmoid or ELU for activation.")
+
+
     def predict(self, X):
+        """Uses a linear prediction"""
         net_input = np.dot(X, self.w_) + self.b_
         return np.where(net_input >= 0.0, 1, 0)
