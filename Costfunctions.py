@@ -21,10 +21,10 @@ class Costfunctions:
             self.p = 1. / (1. + np.exp(-np.clip(Xw, -250, 250)))
             return self.p
         elif(key == "ELU"):
-            if (z >= 0):
-                return z
+            if (Xw >= 0):
+                return Xw
             else:
-                return alpha*(np.exp(z)-1)
+                return alpha*(np.exp(Xw)-1)
         else:
             print("Unvalide keyword argument. Use siogmoid or ELU for activation.")
 
@@ -37,11 +37,10 @@ class Cost_OLS(Costfunctions):
 
     """ Normal costfunction and gradient"""
     def calculate_cost(self, X, y, w):
-        return (y-X.dot(w[1:])).T@(y-X.dot(w[1:]))
+        return (y-X.dot(w)).T@(y-X.dot(w))
 
-    def grad(self, X, y, w, errors):
-        theta=0
-        return 2 * X.T.dot(X.dot(y-w[1:]))
+    def grad(self, X,y, w):
+        return - 2 * X.T.dot( y - w.dot(X))
 
     """ Logistic costfunction and gradient"""
     def log_calculate(self, X, y,  w):
@@ -62,27 +61,21 @@ class Cost_Ridge(Costfunctions):
         self.lmd = lmd
     """ Normal costfunction and gradient"""
     def calculate_cost(self, X, y, w):
-        return (y-X.dot(w[1:])).T@(y-X.dot(w[1:]))
+        return (y-X.dot(w)).T@(y-X.dot(w)) + self.lmd*(np.sum(w)**2)
 
     def grad(self, X, w, errors):
-        pass
+        l2term =  self.lmd *np.sum(w** 2)
+        return - 2 * X.T.dot( y - w.dot(X)) + l2term
 
     """ Logistic costfunction and gradient"""
     def log_calculate(self, X, y, w):
-        # Bruker ikke Xen
-        #net_input = np.dot(X, self.w_[1:]) + self.w_[0]
-        #self.p = self.activation(X, key)
-        #print(np.sum(w[0]**2))
-        #print(np.sum(w[1:]**2)) blir nesten like
-
         # penalty on bias to?
-        l2term =  self.lmd *np.sum(w[1:] ** 2)# + np.sum(w[0] ** 2))
+        l2term =  self.lmd *np.sum(w ** 2)# + np.sum(w[0] ** 2))
         return -y.dot(np.log(self.p+ 1e-12)) - ((1 - y).dot(np.log(1 - self.p+ 1e-12) )) + l2term
-        #+ self.lmd*w[1:] + w[0]
 
     # returns a array
     def log_grad(self, X, w, errors):
-        return X.T.dot(errors) + 2*self.lmd*w[1:]
+        return X.T.dot(errors) + 2*self.lmd*w
 
 class Cost_Lasso(Costfunctions):
 
@@ -93,18 +86,19 @@ class Cost_Lasso(Costfunctions):
 
     """ Normal costfunction and gradient"""
     def calculate_cost(self, X, y, w):
-        return (y-X.dot(w[1:])).T@(y-X.dot(w[1:]))
+        l1term = self.lmd*np.sum(np.abs(w))
+        return (y-X.dot(w)).T@(y-X.dot(w)) + l1term
 
-    def grad(self, X, w, errors):
-        pass
+    def grad(self, X,y, w):
+        return - 2 * X.T.dot( y - w.dot(X)) + self.lmd*np.sign(w)
 
     """ Logistic costfunction and gradient"""
     def log_calculate(self, X, y, w):
         # returns a scalar.
         #self.p = self.activation(X, "sigmoid")
-        l1term = self.lmd*np.sum(np.abs(w[1:]))
+        l1term = self.lmd*np.sum(np.abs(w))
         return -y.dot(np.log(self.p+ 1e-12)) - ((1 - y).dot(np.log(1 - self.p+1e-12))) + l1term
 
     # The derivative of a absolute value is a signfunction
     def log_grad(self, X, w, errors):
-        return X.T.dot(errors) + self.lmd*np.sign(w[1:])
+        return X.T.dot(errors) + self.lmd*np.sign(w)
