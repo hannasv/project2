@@ -30,7 +30,7 @@ class NeuralNetMLP:
       and validation accuracy for each epoch during training.
 
     """
-    def __init__(self, n_hidden=30, h_layers = None, l2=0.4, epochs=100, eta=0.001, shuffle=True,
+    def __init__(self, n_hidden=30, l2=0.4, epochs=100, eta=0.001, shuffle=True,
                  batch_size=1, seed=None, alpha=0.01, activation='elu'):
 
         self.random = np.random.RandomState(seed)
@@ -42,8 +42,6 @@ class NeuralNetMLP:
         self.batch_size = batch_size
         self.alpha = alpha
         self.activation = activation
-        self.h_layers = h_layers
-
         # Set to coorect dimentions??
         self.hidden_weights = None
         self.hidden_bias = None
@@ -82,13 +80,13 @@ class NeuralNetMLP:
 
         n_output = 1
         n_samples, n_features = np.shape(X_train)
-        # weights for input -> hidden
-        self.b_h = np.zeros(self.n_hidden) + 0.0001
-        self.W_h = np.random.uniform(-0.7,0.7,(n_features, self.n_hidden))
+        # Using three hidden h_layers
+        self.b_h = np.ones((self.n_hidden, n_hidden_layers))
+        self.W_h = np.array([np.random.uniform(-0.7,0.7,(n_features, self.n_hidden)) for i in range(3)])
 
-        # weights for hidden -> output
-        self.b_out = np.zeros(n_output) + 0.0001
+        self.b_out = np.ones(n_output)
         self.W_out = np.random.uniform(-0.7,0.7,(self.n_hidden, n_output))
+
     def _forwardprop(self, X):
         """Compute forward propagation step"""
         #n_layers = len(self.h_layers)
@@ -96,60 +94,86 @@ class NeuralNetMLP:
         # [n_samples, n_features] dot [n_features, n_hidden]
         # -> [n_samples, n_hidden]
 
-        Z_hidden = np.dot(X, self.W_h) + self.b_h
-
+        Z_hidden1 = np.dot(X, self.W_h) + self.b_h
         # step 2: activation of hidden layer
-        A_hidden = self.activate(Z_hidden, self.activation)
+        A_hidden1 = self.activate(Z_hidden, self.activation)
+
+        Z_hidden2 = np.dot(A_hidden1, self.W_h) + self.b_h
+        # step 2: activation of hidden layer
+        A_hidden2 = self.activate(Z_hidden2, self.activation)
+
+        Z_hidden3 = np.dot(A_hidden2, self.W_h) + self.b_h
+        # step 2: activation of hidden layer
+        A_hidden3 = self.activate(Z_hidden3, self.activation)
 
         # step 3: net input of output layer
         # [n_samples, n_hidden] dot [n_hidden, n_classlabels]
         # -> [n_samples, n_classlabels]
-        Z_out = np.dot(A_hidden, self.W_out) + self.b_out
+        Z_out = np.dot(A_hidden3, self.W_out) + self.b_out
 
         # step 4: linear activation output layer
+        # Allowing all values since its
         A_out = Z_out
-
+        Z_hidden = np.array([Z_hidden1, Z_hidden2, Z_hidden3])
+        A_hidden = np.array(A_hidden1, A_hidden2, A_hidden3)
         return Z_hidden, A_hidden, Z_out, A_out
 
-    def _backprop(self, y, X, A_hidden, Z_hidden, A_out, batch_idx):
+    def _backprop(self, y, X, A_hidden, Z_hidden, A_out, Z_out, batch_idx):
 
-        # [n_samples, n_classlabels]
+        """A_hidden and Z_hidden are arrays"""
+
         if np.ndim(y) < 2:
-            error_out = A_out - y[batch_idx, np.newaxis]
+            # if number of classification cases is less than two
+            grad_a_out = A_out - y[batch_idx, np.newaxis]
         else:
-            error_out = A_out - y[batch_idx]
-            # not in use
+            grad_a_out = A_out - y[batch_idx]
 
-        # [n_hidden, n_samples] dot [n_samples, n_classlabels]
-        # -> [n_hidden, n_classlabels]
-        grad_w_out = np.dot(A_hidden.T, error_out)
+        """ Use this in Logistic"""
+        #act_derivative_out = self.activation(Z_out, self.activation, deriv = True)
+        act_derivative_out = 1
+        # Since we are in the regression case with a linear ouput funct.
+
+        error_out = grad_a_out*act_derivative_out
+        grad_w_out = np.dot(A_hidden[-1].T, error_out)
         grad_b_out = np.sum(error_out, axis=0)
 
-        # [n_samples, n_hidden]
-        act_derivative = self.activate(Z_hidden, self.activation, deriv=True)
+        act_derivative3 = self.activate(Z_hidden[-1], self.activation, deriv=True)
+        error_hidden3 = np.dot(error_out, self.W_out.T) * act_derivative3
+        grad_w_h_3 = np.dot(X[batch_idx].T, error_hidden3)
+        grad_b_h_3 = np.sum(error_hidden3, axis=0)
+        """Update weights and biases"""
+        # TODO:  include regularization delta_w_h = (grad_w_h_ + self.l2 * self.W_h[-1])
 
-        # [n_samples, n_classlabels] dot [n_classlabels, n_hidden]
-        # -> [n_samples, n_hidden]
-        error_hidden = np.dot(error_out, self.W_out.T) * act_derivative
+        self.W_h[-1] = self.W_h[-1] - self.eta * grad_w_h_3
+        self.b_h[-1] = self.b_h[-1] - self.eta * grad_b_h_3
 
-        # [n_features, n_samples] dot [n_samples, n_hidden]
-        # -> [n_features, n_hidden]
-        grad_w_h = np.dot(X[batch_idx].T, error_hidden)
-        grad_b_h = np.sum(error_hidden, axis=0)
+        act_derivative2 = self.activate(Z_hidden[1], self.activation, deriv=True)
+        error_hidden2 = np.dot(error_hidden3, self.W_h[-1].T) * act_derivative2
+        grad_w_h_2 = np.dot(X[batch_idx].T, error_hidden2)
+        grad_b_h_2 = np.sum(error_hidden2, axis=0)
 
+        self.W_h[1] = self.W_h[1] - self.eta * grad_w_h_2
+        self.b_h[1] = self.b_h[1] - self.eta * grad_b_h_2
 
+        act_derivative1 = self.activate(Z_hidden[0], self.activation, deriv=True)
+        error_hidden1 = np.dot(error_hidden2, self.W_h[1].T) * act_derivative1
+        grad_w_h_1 = np.dot(X[batch_idx].T, error_hidden2)
+        grad_b_h_1 = np.sum(error_hidden2, axis=0)
+
+        self.W_h[0] = self.W_h[0] - self.eta * grad_w_h_1
+        self.b_h[0] = self.b_h[0] - self.eta * grad_b_h_1
         # Regularization and weight updates
-        delta_w_h = (grad_w_h + self.l2 * self.W_h)
+        #delta_w_h = (grad_w_h_ + self.l2 * self.W_h[-1])
 
         # NOTE: bias is not regularized.
-        delta_b_h = grad_b_h
-        delta_b_out = grad_b_out
+        #delta_b_h = grad_b_h
+        #delta_b_out = grad_b_out
 
-        self.W_h = self.W_h - self.eta * delta_w_h
-        self.b_h = self.b_h - self.eta * delta_b_h
+        #self.W_h = self.W_h - self.eta * delta_w_h
+        #self.b_h = self.b_h - self.eta * delta_b_h
+        #delta_w_out = (grad_w_out + self.l2 * self.W_out)
 
-        delta_w_out = (grad_w_out + self.l2 * self.W_out)
-        return delta_w_out, delta_b_out
+        return grad_w_out, grad_b_out
 
     def _cost(self, X, y):
         """Compute cost function.
@@ -241,7 +265,7 @@ class NeuralNetMLP:
         """
 
         self.initialize_weights_and_bias(X_train)
-        print(self.W_out.shape)
+        #print(self.W_out.shape)
 
         # for progress formatting
         epoch_strlen = len(str(self.epochs))
