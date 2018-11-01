@@ -2,19 +2,14 @@
 import numpy as np
 
 class Costfunctions:
-    def __init__(self, eta, w, lmd):
-        self.w = w
+    def __init__(self, eta, lmd):
         self.eta = eta
         self.lmd = lmd
         self.p = None
 
     # Computes the residuals = error
     def r(self, y): # resuduals.
-        return y-self.p
-
-    # Currently not used anywhere.
-    def update_weights(self, new):
-        self.w = new
+        return self.p-y
 
     def activation(self, Xw, key):
         if (key == "sigmoid"):
@@ -22,9 +17,11 @@ class Costfunctions:
             return self.p
         elif(key == "ELU"):
             if (Xw >= 0):
-                return Xw
+                self.p = Xw
+                return self.p
             else:
-                return alpha*(np.exp(Xw)-1)
+                self.p = alpha*(np.exp(Xw)-1)
+                return self.p
         else:
             print("Unvalide keyword argument. Use siogmoid or ELU for activation.")
 

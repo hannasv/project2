@@ -30,7 +30,7 @@ class NeuralNetMLP:
       and validation accuracy for each epoch during training.
 
     """
-    def __init__(self, n_hidden=30, h_layers = None, l2=0.4, epochs=100, eta=0.001, shuffle=True,
+    def __init__(self, n_hidden=30, l2=0.4, epochs=100, eta=0.001, shuffle=True,
                  batch_size=1, seed=None, alpha=0.01, activation='elu'):
 
         self.random = np.random.RandomState(seed)
@@ -42,8 +42,6 @@ class NeuralNetMLP:
         self.batch_size = batch_size
         self.alpha = alpha
         self.activation = activation
-        self.h_layers = h_layers
-
         # Set to coorect dimentions??
         self.hidden_weights = None
         self.hidden_bias = None
@@ -82,154 +80,100 @@ class NeuralNetMLP:
 
         n_output = 1
         n_samples, n_features = np.shape(X_train)
-        # weights for input -> hidden
-        if (self.h_layers != None):
-            n_hidden_layers = len(self.h_layers)
-            self.b_h = np.zeros((self.n_hidden, n_hidden_layers)) + 0.0001
-            self.W_h = np.array([np.random.uniform(-0.7,0.7,(n_features, self.n_hidden)) for i in range(n_hidden_layers)])
-            self.b_out = np.zeros(n_output) + 0.0001
-            self.W_out = np.random.uniform(-0.7,0.7,(self.n_hidden, n_output))
+        # Using three hidden h_layers
+        self.b_h = np.ones((self.n_hidden, n_hidden_layers))
+        self.W_h = np.array([np.random.uniform(-0.7,0.7,(n_features, self.n_hidden)) for i in range(3)])
 
-        else:
-            self.b_h = np.zeros(self.n_hidden) + 0.0001
-            self.W_h = np.random.uniform(-0.7,0.7,(n_features, self.n_hidden))
-
-            # weights for hidden -> output
-            self.b_out = np.zeros(n_output) + 0.0001
-            self.W_out = np.random.uniform(-0.7,0.7,(self.n_hidden, n_output))
+        self.b_out = np.ones(n_output)
+        self.W_out = np.random.uniform(-0.7,0.7,(self.n_hidden, n_output))
 
     def _forwardprop(self, X):
         """Compute forward propagation step"""
-        if (self.h_layers == None):
-            #n_layers = len(self.h_layers)
-            # step 1: net input of hidden layer
-            # [n_samples, n_features] dot [n_features, n_hidden]
-            # -> [n_samples, n_hidden]
+        #n_layers = len(self.h_layers)
+        # step 1: net input of hidden layer
+        # [n_samples, n_features] dot [n_features, n_hidden]
+        # -> [n_samples, n_hidden]
 
-            Z_hidden = np.dot(X, self.W_h) + self.b_h
-            print("X: " + str(X.shape))
-            print("W_h:" + str(self.W_h.shape))
-            print("b:h " + str(self.b_h.shape))
-            # step 2: activation of hidden layer
-            A_hidden = self.activate(Z_hidden, self.activation)
+        Z_hidden1 = np.dot(X, self.W_h) + self.b_h
+        # step 2: activation of hidden layer
+        A_hidden1 = self.activate(Z_hidden, self.activation)
 
-            # step 3: net input of output layer
-            # [n_samples, n_hidden] dot [n_hidden, n_classlabels]
-            # -> [n_samples, n_classlabels]
-            Z_out = np.dot(A_hidden, self.W_out) + self.b_out
+        Z_hidden2 = np.dot(A_hidden1, self.W_h) + self.b_h
+        # step 2: activation of hidden layer
+        A_hidden2 = self.activate(Z_hidden2, self.activation)
 
-            # step 4: linear activation output layer
-            A_out = Z_out
+        Z_hidden3 = np.dot(A_hidden2, self.W_h) + self.b_h
+        # step 2: activation of hidden layer
+        A_hidden3 = self.activate(Z_hidden3, self.activation)
 
+        # step 3: net input of output layer
+        # [n_samples, n_hidden] dot [n_hidden, n_classlabels]
+        # -> [n_samples, n_classlabels]
+        Z_out = np.dot(A_hidden3, self.W_out) + self.b_out
 
-        else: # When we have more than one hidden layers
-            Z_hidden = []#np.zeros((len(self.W_h), len(self.h_layers)))
-            A_hidden = []#np.zeros((len(self.W_h), len(self.h_layers)))
+        # step 4: linear activation output layer
+        # Allowing all values since its
+        A_out = Z_out
+        Z_hidden = np.array([Z_hidden1, Z_hidden2, Z_hidden3])
+        A_hidden = np.array(A_hidden1, A_hidden2, A_hidden3)
+        return Z_hidden, A_hidden, Z_out, A_out
 
-            for i in range(len(self.h_layers)):
-                Z_hidden.append(np.dot(X, self.W_h[i]) + self.b_h[:,i])
-                A_hidden.append(self.activate(Z_hidden[i], self.activation))
+    def _backprop(self, y, X, A_hidden, Z_hidden, A_out, Z_out, batch_idx):
 
-            #print(self.W_out.shape)
-            #print(np.dot(A_hidden[-1], self.W_out).shape)
-            Z_out = np.dot(A_hidden[-1], self.W_out) + self.b_out
-            A_out = Z_out # because it linar is this wrong
+        """A_hidden and Z_hidden are arrays"""
 
-        return np.array(Z_hidden), np.array(A_hidden), Z_out, A_out
-
-    def _backprop(self, y, X, A_hidden, Z_hidden, A_out, batch_idx):
-
-        if (self.h_layers == None):
-            # [n_samples, n_classlabels]
-
-            if np.ndim(y) < 2:
-                # in order to keep y as a column
-                error_out = A_out - y[batch_idx, np.newaxis]
-            else:
-                error_out = A_out - y[batch_idx]
-                # not in use
-
-            # [n_hidden, n_samples] dot [n_samples, n_classlabels]
-            # -> [n_hidden, n_classlabels]
-            grad_w_out = np.dot(A_hidden.T, error_out)
-            grad_b_out = np.sum(error_out, axis=0)
-
-            # [n_samples, n_hidden]
-            act_derivative = self.activate(Z_hidden, self.activation, deriv=True)
-
-            # [n_samples, n_classlabels] dot [n_classlabels, n_hidden]
-            # -> [n_samples, n_hidden]
-            error_hidden = np.dot(error_out, self.W_out.T) * act_derivative
-
-            # [n_features, n_samples] dot [n_samples, n_hidden]
-            # -> [n_features, n_hidden]
-            grad_w_h = np.dot(X[batch_idx].T, error_hidden)
-            grad_b_h = np.sum(error_hidden, axis=0)
-
-
-            # Regularization and weight updates
-            delta_w_h = (grad_w_h + self.l2 * self.W_h)
-
-            # NOTE: bias is not regularized.
-            delta_b_h = grad_b_h
-            delta_b_out = grad_b_out
-
-            self.W_h = self.W_h - self.eta * delta_w_h
-            self.b_h = self.b_h - self.eta * delta_b_h
-
-            delta_w_out = (grad_w_out + self.l2 * self.W_out)
+        if np.ndim(y) < 2:
+            # if number of classification cases is less than two
+            grad_a_out = A_out - y[batch_idx, np.newaxis]
         else:
+            grad_a_out = A_out - y[batch_idx]
 
-            # [n_samples, n_classlabels]
-            if np.ndim(y) < 2:
-                error_out = A_out - y[batch_idx, np.newaxis]
-            else:
-                error_out = A_out - y[batch_idx]
-                # not in use
+        """ Use this in Logistic"""
+        #act_derivative_out = self.activation(Z_out, self.activation, deriv = True)
+        act_derivative_out = 1
+        # Since we are in the regression case with a linear ouput funct.
 
-            # [n_hidden, n_samples] dot [n_samples, n_classlabels]
-            # -> [n_hidden, n_classlabels]
-            error_prev = error_out
-            prev_weights = self.W_out
+        error_out = grad_a_out*act_derivative_out
+        grad_w_out = np.dot(A_hidden[-1].T, error_out)
+        grad_b_out = np.sum(error_out, axis=0)
 
-            for i in range(len(self.h_layers)):
-                #print("A_H.T: dot  " + str(np.shape(A_hidden[-1-i].T)))
-                print("first weigfhts: " + str(self.W_out.shape))
-                print("error_out/prev " + str(error_prev.shape))
-                grad_w_out = np.dot(A_hidden[-1-i].T, error_prev)
-                grad_b_out = np.sum(error_prev)
-                # [n_samples, n_hidden]
-                act_derivative = self.activate(Z_hidden[-1-i], self.activation, deriv=True)
-                #print(" Z_hidden[:,-1-i]:  " + str(Z_hidden[-1-i].shape))
-                #print("act_derivative: " + str(act_derivative.shape))
-                # [n_samples, n_classlabels] dot [n_classlabels, n_hidden]
-                # -> [n_samples, n_hidden]
-                print("prev_weights.T: " + str(prev_weights.T.shape))
-                error_hidden = np.dot(error_prev, prev_weights.T) * act_derivative
-                error_prev = error_hidden
-                prev_weights = self.W_h[-i-1]
-                print("update prev weights: " + str(prev_weights.shape))
-                                # [n_features, n_samples] dot [n_samples, n_hidden]
-                # -> [n_features, n_hidden]
-                grad_w_h = np.dot(X[batch_idx].T, error_prev)
-                grad_b_h = np.sum(error_prev, axis=0)
+        act_derivative3 = self.activate(Z_hidden[-1], self.activation, deriv=True)
+        error_hidden3 = np.dot(error_out, self.W_out.T) * act_derivative3
+        grad_w_h_3 = np.dot(X[batch_idx].T, error_hidden3)
+        grad_b_h_3 = np.sum(error_hidden3, axis=0)
+        """Update weights and biases"""
+        # TODO:  include regularization delta_w_h = (grad_w_h_ + self.l2 * self.W_h[-1])
 
-                # Regularization and weight updates
-                delta_w_h = (grad_w_h + self.l2 * self.W_h[-i-1])
+        self.W_h[-1] = self.W_h[-1] - self.eta * grad_w_h_3
+        self.b_h[-1] = self.b_h[-1] - self.eta * grad_b_h_3
 
-                # NOTE: bias is not regularized.
-                delta_b_h = grad_b_h
-                delta_b_out = grad_b_out # returned
+        act_derivative2 = self.activate(Z_hidden[1], self.activation, deriv=True)
+        error_hidden2 = np.dot(error_hidden3, self.W_h[-1].T) * act_derivative2
+        grad_w_h_2 = np.dot(X[batch_idx].T, error_hidden2)
+        grad_b_h_2 = np.sum(error_hidden2, axis=0)
 
-                print(delta_b_h.shape)
-                print(self.b_h[i].shape)
+        self.W_h[1] = self.W_h[1] - self.eta * grad_w_h_2
+        self.b_h[1] = self.b_h[1] - self.eta * grad_b_h_2
 
-                self.W_h[i] = self.W_h[i] - self.eta * delta_w_h
-                self.b_h[i] = self.b_h[i] - self.eta * delta_b_h
+        act_derivative1 = self.activate(Z_hidden[0], self.activation, deriv=True)
+        error_hidden1 = np.dot(error_hidden2, self.W_h[1].T) * act_derivative1
+        grad_w_h_1 = np.dot(X[batch_idx].T, error_hidden2)
+        grad_b_h_1 = np.sum(error_hidden2, axis=0)
 
-                delta_w_out = (grad_w_out + self.l2 * self.W_out) # returned
+        self.W_h[0] = self.W_h[0] - self.eta * grad_w_h_1
+        self.b_h[0] = self.b_h[0] - self.eta * grad_b_h_1
+        # Regularization and weight updates
+        #delta_w_h = (grad_w_h_ + self.l2 * self.W_h[-1])
 
-        return delta_w_out, delta_b_out
+        # NOTE: bias is not regularized.
+        #delta_b_h = grad_b_h
+        #delta_b_out = grad_b_out
+
+        #self.W_h = self.W_h - self.eta * delta_w_h
+        #self.b_h = self.b_h - self.eta * delta_b_h
+        #delta_w_out = (grad_w_out + self.l2 * self.W_out)
+
+        return grad_w_out, grad_b_out
 
     def _cost(self, X, y):
         """Compute cost function.
