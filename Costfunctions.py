@@ -9,11 +9,12 @@ class Costfunctions:
 
     # Computes the residuals = error
     def r(self, y): # resuduals.
-        return self.p-y
+        temp =  y - self.p
+        return temp
 
     def activation(self, Xw, key):
         if (key == "sigmoid"):
-            self.p = 1. / (1. + np.exp(-np.clip(Xw, -250, 250)))
+            self.p = 1. / (1. + np.exp(-Xw))
             return self.p
         elif(key == "ELU"):
             if (Xw >= 0):
@@ -37,7 +38,7 @@ class Cost_OLS(Costfunctions):
         return (y-X.dot(w)).T@(y-X.dot(w))
 
     def grad(self, X,y, w):
-        return - 2 * X.T.dot( y - w.dot(X))
+        return 2/X.shape[1]* X.T.dot(w.dot(X)-y)
 
     """ Logistic costfunction and gradient"""
     def log_calculate(self, X, y,  w):
@@ -46,8 +47,8 @@ class Cost_OLS(Costfunctions):
 
     # returns a vector
     def log_grad(self, X, w, errors):
-        #print(X.T.dot(errors))
-        return X.T.dot(errors)
+        # errora = y-p
+        return 1/X.shape[1]*X.T.dot(errors)
 
 
 class Cost_Ridge(Costfunctions):
@@ -62,7 +63,7 @@ class Cost_Ridge(Costfunctions):
 
     def grad(self, X, w, errors):
         l2term =  self.lmd *np.sum(w** 2)
-        return - 2 * X.T.dot( y - w.dot(X)) + l2term
+        return - 2/X.shape[1]* X.T.dot( y - w.dot(X)) + l2term
 
     """ Logistic costfunction and gradient"""
     def log_calculate(self, X, y, w):
@@ -72,7 +73,7 @@ class Cost_Ridge(Costfunctions):
 
     # returns a array
     def log_grad(self, X, w, errors):
-        return X.T.dot(errors) + 2*self.lmd*w
+        return 1/X.shape[1]*X.T.dot(errors) + 2*self.lmd*w
 
 class Cost_Lasso(Costfunctions):
 
@@ -87,7 +88,7 @@ class Cost_Lasso(Costfunctions):
         return (y-X.dot(w)).T@(y-X.dot(w)) + l1term
 
     def grad(self, X,y, w):
-        return - 2 * X.T.dot( y - w.dot(X)) + self.lmd*np.sign(w)
+        return - 2/X.shape[1]* X.T.dot( y - w.dot(X)) + self.lmd*np.sign(w)
 
     """ Logistic costfunction and gradient"""
     def log_calculate(self, X, y, w):
@@ -98,4 +99,4 @@ class Cost_Lasso(Costfunctions):
 
     # The derivative of a absolute value is a signfunction
     def log_grad(self, X, w, errors):
-        return X.T.dot(errors) + self.lmd*np.sign(w)
+        return 1/X.shape[1]*X.T.dot(errors) + self.lmd*np.sign(w)
