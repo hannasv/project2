@@ -79,9 +79,11 @@ class LogisticRegression(object):
                 batchY = y[batch_idx]
                 #print(batchY.shape)
                 net_input = np.dot(batchX, self.w_) + self.b_
-                output = 1. / (1. + np.exp(-net_input))
+                output = self.activation(net_input, "sigmoid")
                 errors = output - batchY
                 # Using lasso pentalty
+                # TODO. Make if function witch sets penalty term based on model = "ols", "ridge", "lasso"
+
                 gradient = 1/self.batch_size*batchX.T.dot(errors) + self.lmd*np.sign(self.w_)
                 #update weights
                 self.w_ -=  self.eta * gradient

@@ -47,6 +47,7 @@ class NeuralNetMLP:
         self.hidden_bias = None
         self.output_weights = None
         self.output_bias = None
+        self.h_layers = [n_hidden,n_hidden,n_hidden]
 
 
     def activate(self, Z, kind='elu', deriv=False):
@@ -78,14 +79,21 @@ class NeuralNetMLP:
         #self.output_weights = np.random.randn(self.n_hidden, 1)
         #self.output_bias = np.zeros(1) + 0.01
 
+        # TODO: n_output should be equal to 2 in Logistic because we have to cases 0,1.
         n_output = 1
         n_samples, n_features = np.shape(X_train)
         # Using three hidden h_layers
-        self.b_h = np.ones((self.n_hidden, n_hidden_layers))
-        self.W_h = np.array([np.random.uniform(-0.7,0.7,(n_features, self.n_hidden)) for i in range(3)])
-
+        self.b_h = np.ones((30,self.n_hidden))
+        W_1 = np.array([0.1*np.random.randn(n_features) for i in range(self.h_layers[0])])
+        print("w1shape: " + str(W_1.shape))
+        W_2 = np.array([0.1*np.random.randn(self.h_layers[0]) for i in range(self.h_layers[1])])
+        print("w2shape: " + str(W_2.shape))
+        W_3 = np.array([0.1*np.random.randn(self.h_layers[1]) for i in range(self.h_layers[2])])
+        print("w3shape: " + str(W_3.shape))
+        self.W_h = [W_1.T, W_2.T, W_3.T]
         self.b_out = np.ones(n_output)
-        self.W_out = np.random.uniform(-0.7,0.7,(self.n_hidden, n_output))
+        self.W_out = np.array([0.1*np.random.randn(self.h_layers[2]) for i in range(n_output)])
+
 
     def _forwardprop(self, X):
         """Compute forward propagation step"""
@@ -94,28 +102,31 @@ class NeuralNetMLP:
         # [n_samples, n_features] dot [n_features, n_hidden]
         # -> [n_samples, n_hidden]
 
-        Z_hidden1 = np.dot(X, self.W_h) + self.b_h
-        # step 2: activation of hidden layer
-        A_hidden1 = self.activate(Z_hidden, self.activation)
+        #print(X.shape, self.W_h[0].shape)
 
-        Z_hidden2 = np.dot(A_hidden1, self.W_h) + self.b_h
-        # step 2: activation of hidden layer
-        A_hidden2 = self.activate(Z_hidden2, self.activation)
 
-        Z_hidden3 = np.dot(A_hidden2, self.W_h) + self.b_h
+        Z_hidden1 = np.dot(X, self.W_h[0]) + self.b_h[0]
         # step 2: activation of hidden layer
-        A_hidden3 = self.activate(Z_hidden3, self.activation)
+        A_hidden1 = self.activate(Z_hidden1, self.activation, deriv = False)
+
+        Z_hidden2 = np.dot(A_hidden1, self.W_h[1]) + self.b_h[1]
+        # step 2: activation of hidden layer
+        A_hidden2 = self.activate(Z_hidden2, self.activation, deriv = False)
+
+        Z_hidden3 = np.dot(A_hidden2, self.W_h[2]) + self.b_h[2]
+        # step 2: activation of hidden layer
+        A_hidden3 = self.activate(Z_hidden3, self.activation, deriv = False)
 
         # step 3: net input of output layer
         # [n_samples, n_hidden] dot [n_hidden, n_classlabels]
         # -> [n_samples, n_classlabels]
-        Z_out = np.dot(A_hidden3, self.W_out) + self.b_out
+        Z_out = np.dot(A_hidden3, self.W_out.T) + self.b_out
 
         # step 4: linear activation output layer
         # Allowing all values since its
         A_out = Z_out
         Z_hidden = np.array([Z_hidden1, Z_hidden2, Z_hidden3])
-        A_hidden = np.array(A_hidden1, A_hidden2, A_hidden3)
+        A_hidden = np.array([A_hidden1, A_hidden2, A_hidden3])
         return Z_hidden, A_hidden, Z_out, A_out
 
     def _backprop(self, y, X, A_hidden, Z_hidden, A_out, Z_out, batch_idx):
@@ -130,26 +141,36 @@ class NeuralNetMLP:
 
         """ Use this in Logistic"""
         #act_derivative_out = self.activation(Z_out, self.activation, deriv = True)
+
+
+        """ For the regressioncase where the outpu func is linar"""
         act_derivative_out = 1
         # Since we are in the regression case with a linear ouput funct.
 
         error_out = grad_a_out*act_derivative_out
-        grad_w_out = np.dot(A_hidden[-1].T, error_out)
+        grad_w_out = np.dot(A_hidden[2].T, error_out)
         grad_b_out = np.sum(error_out, axis=0)
 
-        act_derivative3 = self.activate(Z_hidden[-1], self.activation, deriv=True)
+        #update w_out this has correct timentions.
+        self.W_out = self.W_out - self.eta * grad_w_out
+        self.b_out = self.b_out - self.eta * grad_b_out
+
+        act_derivative3 = self.activate(Z_hidden[2], self.activation, deriv=True)
+        #print("shape act_deriv: " + str(act_derivative3.shape))
         error_hidden3 = np.dot(error_out, self.W_out.T) * act_derivative3
-        grad_w_h_3 = np.dot(X[batch_idx].T, error_hidden3)
+        #print("error hidden shape: " + str(error_hidden3.shape))
+        grad_w_h_3 = np.dot(A_hidden[1].T, error_hidden3)
+        #print("gradient w_h shape: " + str(grad_w_h_3.shape))
         grad_b_h_3 = np.sum(error_hidden3, axis=0)
         """Update weights and biases"""
         # TODO:  include regularization delta_w_h = (grad_w_h_ + self.l2 * self.W_h[-1])
 
-        self.W_h[-1] = self.W_h[-1] - self.eta * grad_w_h_3
-        self.b_h[-1] = self.b_h[-1] - self.eta * grad_b_h_3
+        self.W_h[2] = self.W_h[2] - self.eta * grad_w_h_3
+        self.b_h[2] = self.b_h[2] - self.eta * grad_b_h_3
 
         act_derivative2 = self.activate(Z_hidden[1], self.activation, deriv=True)
-        error_hidden2 = np.dot(error_hidden3, self.W_h[-1].T) * act_derivative2
-        grad_w_h_2 = np.dot(X[batch_idx].T, error_hidden2)
+        error_hidden2 = np.dot(error_hidden3, self.W_h[2].T) * act_derivative2
+        grad_w_h_2 = np.dot(A_hidden[0].T, error_hidden2)
         grad_b_h_2 = np.sum(error_hidden2, axis=0)
 
         self.W_h[1] = self.W_h[1] - self.eta * grad_w_h_2
@@ -167,16 +188,16 @@ class NeuralNetMLP:
 
         # NOTE: bias is not regularized.
         #delta_b_h = grad_b_h
-        #delta_b_out = grad_b_out
+        delta_b_out = grad_b_out
 
         #self.W_h = self.W_h - self.eta * delta_w_h
         #self.b_h = self.b_h - self.eta * delta_b_h
-        #delta_w_out = (grad_w_out + self.l2 * self.W_out)
+        delta_w_out = (grad_w_out + self.l2 * self.W_out)
 
-        return grad_w_out, grad_b_out
+        return delta_w_out, delta_b_out
 
     def _cost(self, X, y):
-        """Compute cost function.
+        """Compute cost function.   DENNE ER IKKE RETT FOR FLERE LAG
 
         Parameters
         ----------
@@ -212,7 +233,8 @@ class NeuralNetMLP:
         """
 
         Z_hidden, A_hidden, Z_out, A_out = self._forwardprop(X)
-
+        # TODO: for Logistic A_out = sigmoid(Z_out)
+        #print("results:" + str(self.W_h))
         return A_out
 
     def _minibatch_sgd(self, X_train, y_train):
@@ -234,13 +256,15 @@ class NeuralNetMLP:
                 X_train[batch_idx, :]
             )
 
+            #print(self.W_h)
+
             # Backpropagation.
             delta_w_out, delta_b_out = self._backprop(
-                y_train, X_train, A_hidden, Z_hidden, A_out, batch_idx
+                y_train, X_train, A_hidden, Z_hidden, A_out, Z_out, batch_idx
             )
 
-            self.W_out = self.W_out - self.eta * delta_w_out
-            self.b_out = self.b_out - self.eta * delta_b_out
+            #self.W_out = self.W_out - self.eta * delta_w_out
+            #self.b_out = self.b_out - self.eta * delta_b_out
 
         return self
 
@@ -315,6 +339,6 @@ if __name__ == '__main__':
     ann = NeuralNetMLP(batch_size=5, n_hidden=30, h_layers = [30,30,30], eta = 0.001)
     ann.fit(X_train, y_train, X_valid, y_valid)
     print(ann.eval_['valid_preform']) #nans
-    mlp = MLPRegressor(max_iter=10000)
+    mlp = MLPRegressor(max_iter=100)
     mlp.fit(X, y)
     print(mlp.loss_)
