@@ -119,11 +119,12 @@ class LogisticRegression(object):
                     #print(batchY.shape)
                     net_input = np.dot(batchX, self.w_) + self.b_
                     output = costfunc.activation(net_input, "sigmoid")
+
                     errors = costfunc.r(batchY)
-                    gradient = costfunc.log_grad(batchX, self.w_, errors)/batchY.shape[0]
+                    gradient = costfunc.log_grad(batchX, self.w_, errors)
                     #update weights
-                    self.w_ = self.w_ - self.eta * gradient
-                    self.b_ = self.b_ - self.eta * errors.sum()
+                    self.w_ -=  self.eta * gradient
+                    self.b_ -=  self.eta * errors.sum()
 
                     score = np.sum(np.where(output >= 0.5, 1, 0) == batchY)/len(output)
                     scores_epochs.append(score)
@@ -226,4 +227,5 @@ class LogisticRegression(object):
     def predict(self, X):
         """Uses a linear prediction"""
         net_input = np.dot(X, self.w_) + self.b_
-        return np.where(net_input >= 0.5, 1, 0)
+        a = 1. / (1. + np.exp(-net_input))
+        return np.where(a >= 0.5, 1, 0)
