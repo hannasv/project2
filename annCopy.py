@@ -1,7 +1,7 @@
 import numpy as np
 from utils import r2_score, mean_squared_error
 
-class NeuralNetMLPdeep:
+class NeuralNetMLP:
     """Multi-layer perceptron classifier.
 
     Parameters
@@ -47,7 +47,7 @@ class NeuralNetMLPdeep:
         self.hidden_bias = None
         self.output_weights = None
         self.output_bias = None
-        self.h_layers = [n_hidden,n_hidden,n_hidden]
+        #self.h_layers = [n_hidden,n_hidden,n_hidden]
 
 
     def activate(self, Z, kind='elu', deriv=False):
@@ -83,38 +83,23 @@ class NeuralNetMLPdeep:
         n_output = 1
         n_samples, n_features = np.shape(X_train)
         # Using three hidden h_layers
-        self.b_h = np.ones((30,self.n_hidden))
-        W_1 = self.W_h = self.random.normal(loc=0.0, scale=0.1, size=(n_features, self.n_hidden))
-        W_2 = self.W_h = self.random.normal(loc=0.0, scale=0.1, size=(self.n_hidden, self.n_hidden))
-        #np.array([0.1*np.random.randn(self.h_layers[0]) for i in range(self.h_layers[1])])
-        #print("w2shape: " + str(W_2.shape))
-        W_3 = nself.W_h = self.random.normal(loc=0.0, scale=0.1, size=(self.n_hidden, self.n_hidden))
+        self.b_h =  np.ones(self.n_hidden)
+        self.W_h = self.random.normal(loc=0.0, scale=0.1, size=(n_features, self.n_hidden))
+        #np.array([0.1*np.random.randn(n_features) for i in range(self.n_hidden)])
 
-        self.W_h = [W_1, W_2, W_3]
         self.b_out = np.ones(n_output)
-        self.W_out = np.array([0.1*np.random.randn(self.h_layers[2]) for i in range(n_output)])
+        self.W_out = self.random.normal(loc=0.0, scale=0.1, size=(self.n_hidden, n_output))
+        #np.array([0.1*np.random.randn(self.n_hidden)], np.newaxis) # for i in range(n_output)
+
 
 
     def _forwardprop(self, X):
         """Compute forward propagation step"""
-
-        Z_hidden1 = np.dot(X, self.W_h[0]) + self.b_h[0]
-        # step 2: activation of hidden layer
-        A_hidden1 = self.activate(Z_hidden1, self.activation, deriv = False)
-
-        Z_hidden2 = np.dot(A_hidden1, self.W_h[1]) + self.b_h[1]
-        # step 2: activation of hidden layer
-        A_hidden2 = self.activate(Z_hidden2, self.activation, deriv = False)
-
-        Z_hidden3 = np.dot(A_hidden2, self.W_h[2]) + self.b_h[2]
-        # step 2: activation of hidden layer
-        A_hidden3 = self.activate(Z_hidden3, self.activation, deriv = False)
-
-        Z_out = np.dot(A_hidden3, self.W_out.T) + self.b_out
+        Z_hidden = np.dot(X, self.W_h) + self.b_h
+        A_hidden = self.activate(Z_hidden, self.activation, deriv = False)
+        Z_out = np.dot(A_hidden, self.W_out) + self.b_out
+        """ Using linear activatipon func  """
         A_out = Z_out
-
-        Z_hidden = np.array([Z_hidden1, Z_hidden2, Z_hidden3])
-        A_hidden = np.array([A_hidden1, A_hidden2, A_hidden3])
         return Z_hidden, A_hidden, Z_out, A_out
 
     def _backprop(self, y, X, A_hidden, Z_hidden, A_out, Z_out, batch_idx):
@@ -130,61 +115,35 @@ class NeuralNetMLPdeep:
         """ Use this in Logistic"""
         #act_derivative_out = self.activation(Z_out, self.activation, deriv = True)
 
-
         """ For the regressioncase where the outpu func is linar"""
         act_derivative_out = 1
         # Since we are in the regression case with a linear ouput funct.
+
         error_out = grad_a_out*act_derivative_out
-        grad_w_out = np.dot(A_hidden[2].T, error_out)
-        grad_b_out = np.sum(error_out, axis=0)
+        grad_w_out = 1./self.batch_size*np.dot(A_hidden.T, error_out)
+        grad_b_out = 1./self.batch_size*np.sum(error_out, axis=0)
 
-        act_derivative3 = self.activate(Z_hidden[2], self.activation, deriv=True)
-        #print("shape act_deriv: " + str(act_derivative3.shape))
-        error_hidden3 = np.dot(error_out, self.W_out.T) * act_derivative3
-        #print("error hidden shape: " + str(error_hidden3.shape))
-        grad_w_h_3 = np.dot(A_hidden[1].T, error_hidden3)
-        grad_b_h_3 = np.sum(error_hidden3, axis=0)
+        act_derivative_h = self.activate(Z_hidden, self.activation, deriv=True)
+        error_hidden = np.dot(error_out, self.W_out.T) * act_derivative_h
+        grad_w_h = 1./self.batch_size*np.dot(X[batch_idx].T, error_hidden)
+        grad_b_h = 1./self.batch_size*np.sum(error_hidden, axis=0)
+
         """Update weights and biases"""
+        # TODO:  include regularization delta_w_h = (grad_w_h_ + self.l2 * self.W_h[-1])
 
-        delta_b_h_3 = grad_w_h_3
-        delta_w_h_3 = (grad_w_h_3 + self.l2 * self.W_h[2])
+        delta_b_h = grad_b_h
+        delta_w_h = (grad_w_h + self.l2 * self.W_h)
 
-        self.W_h[2] = self.W_h[2] - self.eta * delta_w_h_3
-        self.b_h[2] = self.b_h[2] - self.eta * delta_b_h_3
+        self.W_h = self.W_h - self.eta * grad_w_h
+        self.b_h = self.b_h - self.eta * grad_b_h
 
-        act_derivative2 = self.activate(Z_hidden[1], self.activation, deriv=True)
-        error_hidden2 = np.dot(error_hidden3, self.W_h[2].T) * act_derivative2
-        grad_w_h_2 = np.dot(A_hidden[0].T, error_hidden2)
-        grad_b_h_2 = np.sum(error_hidden2, axis=0)
-
-        delta_b_h_2 = grad_w_h_2
-        delta_w_h_2 = (grad_w_h_2 + self.l2 * self.W_h[1])
-
-        self.W_h[1] = self.W_h[1] - self.eta * delta_w_h_2
-        self.b_h[1] = self.b_h[1] - self.eta * delta_b_h_2
-
-        act_derivative1 = self.activate(Z_hidden[0], self.activation, deriv=True)
-        error_hidden1 = np.dot(error_hidden2, self.W_h[1].T) * act_derivative1
-        grad_w_h_1 = np.dot(X[batch_idx].T, error_hidden2)
-        grad_b_h_1 = np.sum(error_hidden2, axis=0)
-
-        delta_b_out = grad_w_h_1
-        delta_w_out = (grad_w_h_1 + self.l2 * self.W_h[0])
-
-        self.W_h[0] = self.W_h[0] - self.eta * delta_w_h_1
-        self.b_h[0] = self.b_h[0] - self.eta * delta_b_h_1
-        # Regularization and weight updates
-        #delta_w_h = (grad_w_h_ + self.l2 * self.W_h[-1])
-
-        # NOTE: bias is not regularized.
-        #delta_b_h = grad_b_h
         delta_b_out = grad_b_out
         delta_w_out = (grad_w_out + self.l2 * self.W_out)
 
         return delta_w_out, delta_b_out
 
     def _cost(self, X, y):
-        """Compute cost function.   DENNE ER IKKE RETT FOR FLERE LAG
+        """Compute cost function.
 
         Parameters
         ----------
@@ -200,9 +159,10 @@ class NeuralNetMLPdeep:
         """
 
         L2_term = self.l2 * (np.dot(self.W_h.T, self.W_h) + np.dot(self.W_out.T, self.W_out))
-        output_errors = np.average((y_true - y_pred) ** 2, axis=0)
-        cost_linar = (y-X.dot(self.W_h)).T.dot(y-X.dot(self.W_h))
-        return cost_linar + L2_term
+        #output_errors = np.average((y_true - y_pred) ** 2, axis=0)
+        # Logistic cost
+        cost_linear = (y-X.dot(self.W_out)).T.dot(y-X.dot(self.W_out))
+        return cost_linear + L2_term
 
     def predict(self, X):
         """Predict class labels
@@ -221,7 +181,6 @@ class NeuralNetMLPdeep:
 
         Z_hidden, A_hidden, Z_out, A_out = self._forwardprop(X)
         # TODO: for Logistic A_out = sigmoid(Z_out)
-        #print("results:" + str(self.W_h))
         return A_out
 
     def _minibatch_sgd(self, X_train, y_train):
@@ -243,15 +202,14 @@ class NeuralNetMLPdeep:
                 X_train[batch_idx, :]
             )
 
-            #print(self.W_h)
 
             # Backpropagation.
             delta_w_out, delta_b_out = self._backprop(
                 y_train, X_train, A_hidden, Z_hidden, A_out, Z_out, batch_idx
             )
 
-            #self.W_out = self.W_out - self.eta * delta_w_out
-            #self.b_out = self.b_out - self.eta * delta_b_out
+            self.W_out = self.W_out - self.eta * delta_w_out
+            self.b_out = self.b_out - self.eta * delta_b_out
 
         return self
 
@@ -264,9 +222,9 @@ class NeuralNetMLPdeep:
             Input layer with original features.
         y_train : array, shape = [n_samples]
             Target class labels.
-        X_valid : array, shape = [n_samples, n_features]
+        X_test : array, shape = [n_samples, n_features]
             Sample features for validation during training
-        y_valid : array, shape = [n_samples]
+        y_test : array, shape = [n_samples]
             Sample labels for validation during training
 
         Returns:
@@ -294,15 +252,14 @@ class NeuralNetMLPdeep:
             y_train_pred = self.predict(X_train)
             y_test_pred = self.predict(X_test)
 
-            #cost = self._cost(y_test, y_test_pred)
-
+            # Cost without penalty (y-X.dot(self.W_out)).T.dot(y-X.dot(self.W_out))
             train_preform = mean_squared_error(y_train, y_train_pred)
             valid_preform = mean_squared_error(y_test, y_test_pred)
 
             #self.eval_['cost'].append(cost)
             self.eval_['train_preform'].append(train_preform)
             self.eval_['valid_preform'].append(valid_preform)
-
+        #print("epoch nr " + str(epoch) + "    testscore : " + str(valid_preform))
         return self
 
 

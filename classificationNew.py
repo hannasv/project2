@@ -23,15 +23,17 @@ class LogisticRegression(object):
     cost_ : list
       Logistic cost function value in each epoch.
     """
-    def __init__(self, eta, random_state,  shuffle = True, batch_size = 10, epochs=100,lmd = 0, tolerance=1e-14):
+    def __init__(self, eta = 0.01, random_state = 0, shuffle = True, batch_size = 10, epochs=100, penalty = "l1",lmd = 0, tolerance=1e-14, key = "sigmoid", alpha = 0.01):
+
         self.eta = eta
         #self.n_iter = n_iter
         self.random = np.random.RandomState(random_state)
-        #self.key = key
+        self.key = key
+        self.penalty = penalty
         self.lmd = lmd
         self.tol = tolerance
         self.shuffle = shuffle
-        #self.dm = dm # descent method
+        self.alpha = alpha
         self.batch_size = batch_size
         self.epochs = epochs
         self.eval_ = None
@@ -39,6 +41,7 @@ class LogisticRegression(object):
         #self.p = None
         self.w_ = None
         self.b_ = None
+        self.epochCost = None
 
     def fit(self, X, y):
         """ Fit training data.
@@ -64,10 +67,12 @@ class LogisticRegression(object):
 
         # Usinf stochastic gradient descent_method
 
+        self.epochCost = []
+
         for epoch in range(self.epochs):
             n_samples, n_features = np.shape(X)
             indices = np.arange(n_samples)
-            epochLoss = []
+            cost_ = []
             scores_epochs = []
 
             if self.shuffle:
@@ -78,13 +83,29 @@ class LogisticRegression(object):
                 batchX = X[batch_idx,:]
                 batchY = y[batch_idx]
                 #print(batchY.shape)
-                net_input = np.dot(batchX, self.w_) + self.b_
-                output = self.activation(net_input, "sigmoid")
+                net_input = np.clip(np.dot(batchX, self.w_) + self.b_,-250,250)
+                output = self.activation(net_input, self.key)
+                #if np.isfinite(output).all():
+                #    print("ouput contains nans or inf")
                 errors = output - batchY
                 # Using lasso pentalty
                 # TODO. Make if function witch sets penalty term based on model = "ols", "ridge", "lasso"
 
-                gradient = 1/self.batch_size*batchX.T.dot(errors) + self.lmd*np.sign(self.w_)
+                if (self.penalty == "l2"):
+                    # l2 --> ridge
+                    gterm = 2*self.lmd*self.w_
+                    cterm = self.lmd*(np.sum(self.w_)**2)
+                elif (self.penalty == None):
+                    gterm = 0
+                    cterm = 0
+                else:
+                    # l1term --> lasso
+                    gterm = self.lmd*np.sign(self.w_)
+                    cterm = self.lmd*self.w_
+
+                cost = -batchY.dot(np.log(output + 1e-8)) - ((1 - batchY).dot(np.log(1 - output + 1e-8) )) + cterm
+
+                gradient = 1/self.batch_size*batchX.T.dot(errors) + gterm
                 #update weights
                 self.w_ -=  self.eta * gradient
                 self.b_ -=  self.eta * errors.sum()
@@ -93,21 +114,22 @@ class LogisticRegression(object):
                 test = 1. / (1. + np.exp(-net_input))
                 score = np.sum(np.where(test >= 0.5, 1, 0) == batchY)/len(output)
                 scores_epochs.append(score)
-
-            #print("score: " + str(np.average(scores_epochs)) + " for epoch:  " + str(epoch))
-
-            epochLoss.append(errors.sum())
-
-            return self
+                cost_.append(cost)
+                #print("score: " + str(np.average(scores_epochs)) + " for epoch:  " + str(epoch))\
+            self.epochCost.append( np.average( cost_ ))
+        return self
 
     def activation(self, Xw, key):
         if (key == "sigmoid"):
             return  1. / (1. + np.exp(-Xw))
+        elif(key == "LReLu"):
+            Z_out = np.copy(Xw)
+            Z_out[np.where(Xw <= 0)] = self.alpha * Xw[np.where(Xw <= 0)]
+            return Z_out
         elif(key == "ELU"):
-            if (Xw >= 0):
-                return Xw
-            else:
-                return alpha*(np.exp(Xw)-1)
+            Z_out = np.copy(Xw)
+            Z_out[np.where(Xw <= 0)] = self.alpha *(np.exp( Xw[np.where(Xw <= 0)]) - 1)
+            return Z_out
         else:
             print("Unvalide keyword argument. Use siogmoid or ELU for activation.")
 
