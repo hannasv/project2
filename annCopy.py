@@ -31,7 +31,7 @@ class NeuralNetMLP:
 
     """
     def __init__(self, n_hidden=30, l2=0.4, epochs=100, eta=0.001, shuffle=True,
-                 batch_size=1, seed=None, alpha=0.01, activation='elu'):
+                 batch_size=1, seed=None, alpha=0.01, activation='elu', tpe = "logistic"):
 
         self.random = np.random.RandomState(seed)
         self.n_hidden = n_hidden
@@ -47,7 +47,7 @@ class NeuralNetMLP:
         self.hidden_bias = None
         self.output_weights = None
         self.output_bias = None
-        #self.h_layers = [n_hidden,n_hidden,n_hidden]
+        self.tpe = tpe
 
 
     def activate(self, Z, kind='elu', deriv=False):
@@ -67,6 +67,11 @@ class NeuralNetMLP:
                 Z_out = np.copy(Z)
                 Z_out[np.where(Z < 0)] = self.alpha * (np.exp(np.clip(Z[np.where(Z < 0)], -250, 250)) - 1)
                 return Z_out
+        elif kind == "linear":
+            if deriv:
+                return 1
+            else:
+                return Z
         else:
             raise ValueError('Invalid activation function {}'.format(kind))
 
@@ -80,7 +85,13 @@ class NeuralNetMLP:
         #self.output_bias = np.zeros(1) + 0.01
 
         # TODO: n_output should be equal to 2 in Logistic because we have to cases 0,1.
-        n_output = 1
+        if (self.tpe == "regression"):
+            n_output = 1
+        elif(self.tpe == "logistic"):
+            n_output = 2
+        else:
+            n_ouput = 0
+
         n_samples, n_features = np.shape(X_train)
         # Using three hidden h_layers
         self.b_h =  np.ones(self.n_hidden)
@@ -98,8 +109,12 @@ class NeuralNetMLP:
         Z_hidden = np.dot(X, self.W_h) + self.b_h
         A_hidden = self.activate(Z_hidden, self.activation, deriv = False)
         Z_out = np.dot(A_hidden, self.W_out) + self.b_out
-        """ Using linear activatipon func  """
-        A_out = Z_out
+
+        if (self.tpe == "regression"):
+            A_out = self.activate(Z_out, "linaer", deriv = False)
+        elif (self.tpe == "logistic"):
+            A_out = self.activate(Z_out, "sigmoid", deriv = False)
+
         return Z_hidden, A_hidden, Z_out, A_out
 
     def _backprop(self, y, X, A_hidden, Z_hidden, A_out, Z_out, batch_idx):
@@ -116,7 +131,12 @@ class NeuralNetMLP:
         #act_derivative_out = self.activation(Z_out, self.activation, deriv = True)
 
         """ For the regressioncase where the outpu func is linar"""
-        act_derivative_out = 1
+        if (type == "regression"):
+            act_derivative_out = self.activate(Z_out, "linaer", deriv = True)
+        elif (type == "logistic"):
+            act_derivative_out = self.activate(Z_out, "sigmoid", deriv = True)
+        else:
+            act_derivative_out=0
         # Since we are in the regression case with a linear ouput funct.
 
         error_out = grad_a_out*act_derivative_out
@@ -128,8 +148,7 @@ class NeuralNetMLP:
         grad_w_h = 1./self.batch_size*np.dot(X[batch_idx].T, error_hidden)
         grad_b_h = 1./self.batch_size*np.sum(error_hidden, axis=0)
 
-        """Update weights and biases"""
-        # TODO:  include regularization delta_w_h = (grad_w_h_ + self.l2 * self.W_h[-1])
+        """Update weights and biases with penalty"""
 
         delta_b_h = grad_b_h
         delta_w_h = (grad_w_h + self.l2 * self.W_h)
@@ -180,8 +199,10 @@ class NeuralNetMLP:
         """
 
         Z_hidden, A_hidden, Z_out, A_out = self._forwardprop(X)
-        # TODO: for Logistic A_out = sigmoid(Z_out)
-        return A_out
+        if (self.tpe == "linear"):
+            return A_out
+        elif(self.tpe == "logistic"):
+            return np.where(A_out >= 0.5, 1, 0)
 
     def _minibatch_sgd(self, X_train, y_train):
         n_samples, n_features = np.shape(X_train)
@@ -252,14 +273,21 @@ class NeuralNetMLP:
             y_train_pred = self.predict(X_train)
             y_test_pred = self.predict(X_test)
 
-            # Cost without penalty (y-X.dot(self.W_out)).T.dot(y-X.dot(self.W_out))
-            train_preform = mean_squared_error(y_train, y_train_pred)
-            valid_preform = mean_squared_error(y_test, y_test_pred)
+            if (self.tpe == "regression"):
+                # Cost without penalty (y-X.dot(self.W_out)).T.dot(y-X.dot(self.W_out))
+                train_preform = mean_squared_error(y_train, y_train_pred)
+                valid_preform = mean_squared_error(y_test, y_test_pred)
 
-            #self.eval_['cost'].append(cost)
-            self.eval_['train_preform'].append(train_preform)
-            self.eval_['valid_preform'].append(valid_preform)
-        #print("epoch nr " + str(epoch) + "    testscore : " + str(valid_preform))
+                #self.eval_['cost'].append(cost)
+                self.eval_['train_preform'].append(train_preform)
+                self.eval_['valid_preform'].append(valid_preform)
+
+            elif(self.tpe == "logistic"):
+                #Calculate accuracy
+                acc_test = np.sum(y_test == y_test_pred.T[0])/len(y_test)
+                acc_train = np.sum(y_train == y_test_pred.T[0])/len(y_test)
+                self.eval_['train_preform'].append(acc_train)
+                self.eval_['valid_preform'].append(acc_test)
         return self
 
 

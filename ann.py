@@ -83,16 +83,21 @@ class NeuralNetMLPdeep:
         n_output = 1
         n_samples, n_features = np.shape(X_train)
         # Using three hidden h_layers
-        self.b_h = np.ones((30,self.n_hidden))
-        W_1 = self.W_h = self.random.normal(loc=0.0, scale=0.1, size=(n_features, self.n_hidden))
-        W_2 = self.W_h = self.random.normal(loc=0.0, scale=0.1, size=(self.n_hidden, self.n_hidden))
+        b1 = np.ones((n_samples, self.n_hidden))
+        b2 = np.ones((n_samples, self.n_hidden))
+        b3 = np.ones((n_samples, self.n_hidden))
+
+        self.b_h = [b1, b2, b3]
+
+        W_1 =  self.random.normal(loc=0.0, scale=0.1, size=(n_features, self.n_hidden))
+        W_2 =  self.random.normal(loc=0.0, scale=0.1, size=(self.n_hidden, self.n_hidden))
         #np.array([0.1*np.random.randn(self.h_layers[0]) for i in range(self.h_layers[1])])
         #print("w2shape: " + str(W_2.shape))
-        W_3 = nself.W_h = self.random.normal(loc=0.0, scale=0.1, size=(self.n_hidden, self.n_hidden))
+        W_3 = self.random.normal(loc=0.0, scale=0.1, size=(self.n_hidden, self.n_hidden))
 
         self.W_h = [W_1, W_2, W_3]
         self.b_out = np.ones(n_output)
-        self.W_out = np.array([0.1*np.random.randn(self.h_layers[2]) for i in range(n_output)])
+        self.W_out = self.random.normal(loc=0.0, scale=0.1, size=(self.n_hidden, n_output))
 
 
     def _forwardprop(self, X):
@@ -110,7 +115,7 @@ class NeuralNetMLPdeep:
         # step 2: activation of hidden layer
         A_hidden3 = self.activate(Z_hidden3, self.activation, deriv = False)
 
-        Z_out = np.dot(A_hidden3, self.W_out.T) + self.b_out
+        Z_out = np.dot(A_hidden3, self.W_out) + self.b_out
         A_out = Z_out
 
         Z_hidden = np.array([Z_hidden1, Z_hidden2, Z_hidden3])
@@ -146,7 +151,7 @@ class NeuralNetMLPdeep:
         grad_b_h_3 = np.sum(error_hidden3, axis=0)
         """Update weights and biases"""
 
-        delta_b_h_3 = grad_w_h_3
+        delta_b_h_3 = grad_b_h_3
         delta_w_h_3 = (grad_w_h_3 + self.l2 * self.W_h[2])
 
         self.W_h[2] = self.W_h[2] - self.eta * delta_w_h_3
@@ -157,7 +162,7 @@ class NeuralNetMLPdeep:
         grad_w_h_2 = np.dot(A_hidden[0].T, error_hidden2)
         grad_b_h_2 = np.sum(error_hidden2, axis=0)
 
-        delta_b_h_2 = grad_w_h_2
+        delta_b_h_2 = grad_b_h_2
         delta_w_h_2 = (grad_w_h_2 + self.l2 * self.W_h[1])
 
         self.W_h[1] = self.W_h[1] - self.eta * delta_w_h_2
@@ -168,8 +173,8 @@ class NeuralNetMLPdeep:
         grad_w_h_1 = np.dot(X[batch_idx].T, error_hidden2)
         grad_b_h_1 = np.sum(error_hidden2, axis=0)
 
-        delta_b_out = grad_w_h_1
-        delta_w_out = (grad_w_h_1 + self.l2 * self.W_h[0])
+        delta_b_h_1 = grad_b_h_1
+        delta_w_h_1 = (grad_w_h_1 + self.l2 * self.W_h[0])
 
         self.W_h[0] = self.W_h[0] - self.eta * delta_w_h_1
         self.b_h[0] = self.b_h[0] - self.eta * delta_b_h_1
