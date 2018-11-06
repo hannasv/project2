@@ -113,6 +113,7 @@ class LogisticRegression(object):
                 net_input = np.dot(batchX, self.w_) + self.b_
                 test = 1. / (1. + np.exp(-net_input))
                 score = np.sum(np.where(test >= 0.5, 1, 0) == batchY)/len(output)
+
                 scores_epochs.append(score)
                 cost_.append(cost)
                 #print("score: " + str(np.average(scores_epochs)) + " for epoch:  " + str(epoch))\
