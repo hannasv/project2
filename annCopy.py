@@ -31,7 +31,7 @@ class NeuralNetMLP:
 
     """
     def __init__(self, n_hidden=30, l2=0.4, epochs=100, eta=0.001, shuffle=True,
-                 batch_size=1, seed=None, alpha=0.01, activation='elu', tpe = "logistic"):
+                 batch_size=1, seed=None, alpha=0.0001, activation='elu', tpe = "logistic"):
 
         self.random = np.random.RandomState(seed)
         self.n_hidden = n_hidden
@@ -85,13 +85,15 @@ class NeuralNetMLP:
         #self.output_bias = np.zeros(1) + 0.01
 
         # TODO: n_output should be equal to 2 in Logistic because we have to cases 0,1.
+        """
         if (self.tpe == "regression"):
             n_output = 1
         elif(self.tpe == "logistic"):
             n_output = 2
         else:
             n_ouput = 0
-
+        """
+        n_output = 1
         n_samples, n_features = np.shape(X_train)
         # Using three hidden h_layers
         self.b_h =  np.ones(self.n_hidden)
@@ -111,7 +113,7 @@ class NeuralNetMLP:
         Z_out = np.dot(A_hidden, self.W_out) + self.b_out
 
         if (self.tpe == "regression"):
-            A_out = self.activate(Z_out, "linaer", deriv = False)
+            A_out = self.activate(Z_out, "linear", deriv = False)
         elif (self.tpe == "logistic"):
             A_out = self.activate(Z_out, "sigmoid", deriv = False)
 
@@ -199,10 +201,13 @@ class NeuralNetMLP:
         """
 
         Z_hidden, A_hidden, Z_out, A_out = self._forwardprop(X)
-        if (self.tpe == "linear"):
+
+        if (self.tpe == "regression"):
             return A_out
         elif(self.tpe == "logistic"):
             return np.where(A_out >= 0.5, 1, 0)
+        else:
+            print("Unvalid keywordargument: " + self.tpe)
 
     def _minibatch_sgd(self, X_train, y_train):
         n_samples, n_features = np.shape(X_train)
@@ -289,28 +294,3 @@ class NeuralNetMLP:
                 self.eval_['train_preform'].append(acc_train)
                 self.eval_['valid_preform'].append(acc_test)
         return self
-
-
-if __name__ == '__main__':
-
-    import numpy as np
-    import pandas as pd
-
-    from sklearn import datasets
-    from sklearn.neural_network import MLPRegressor
-    from sklearn.datasets import make_regression
-    from sklearn.model_selection import train_test_split
-
-    #digits = datasets.load_digits()
-    #X, y = digits.data, digits.target
-    X, y = make_regression(n_features=10, random_state=1)
-
-    X_train, X_valid, y_train, y_valid = train_test_split(
-        X, y, test_size=0.1, random_state=42
-    )
-    ann = NeuralNetMLP(batch_size=5, n_hidden=30, h_layers = [30,30,30], eta = 0.001)
-    ann.fit(X_train, y_train, X_valid, y_valid)
-    print(ann.eval_['valid_preform']) #nans
-    mlp = MLPRegressor(max_iter=100)
-    mlp.fit(X, y)
-    print(mlp.loss_)
