@@ -83,7 +83,7 @@ class LogisticRegression(object):
                 batchX = X[batch_idx,:]
                 batchY = y[batch_idx]
                 #print(batchY.shape)
-                net_input = np.clip(np.dot(batchX, self.w_) + self.b_,-250,250)
+                np.dot(batchX, self.w_) + self.b_
                 output = self.activation(net_input, self.key)
                 #if np.isfinite(output).all():
                 #    print("ouput contains nans or inf")
@@ -103,9 +103,9 @@ class LogisticRegression(object):
                     gterm = self.lmd*np.sign(self.w_)
                     cterm = self.lmd*self.w_
 
-                cost = -batchY.dot(np.log(output + 1e-8)) - ((1 - batchY).dot(np.log(1 - output + 1e-8) )) + cterm
+                cost = -batchY.dot(np.log(output + 1e-8)) - ((1 - batchY).dot(np.log(1 - output + 1e-8) ))
 
-                gradient = 1/self.batch_size*batchX.T.dot(errors) + gterm
+                gradient = batchX.T.dot(errors)
                 #update weights
                 self.w_ -=  self.eta * gradient
                 self.b_ -=  self.eta * errors.sum()

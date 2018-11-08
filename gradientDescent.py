@@ -66,9 +66,11 @@ class gradientDescent:
                 gradients = 2 * xi.T.dot(xi.dot(self.w_) - yi)
                 eta = self.learning_schedule(epoch * self.m + i)
                 self.w_ = self.w_- eta * gradients
-        print("theta from own sdg" + str(theta))
+        print("theta from own sdg" + str(self.w_))
 
         return self
+
+
 
     def learning_schedule(t):
         t0, t1 = 5, 50
