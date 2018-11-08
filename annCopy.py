@@ -31,7 +31,7 @@ class NeuralNetMLP:
 
     """
     def __init__(self, n_hidden=30, l2=0.4, epochs=100, eta=0.001, shuffle=True,
-                 batch_size=1, seed=None, alpha=0.0001, activation='elu', tpe = "logistic"):
+                 batch_size=1, seed=None, alpha=0.0001, activation='sigmoid', tpe = "logistic"):
 
         self.random = np.random.RandomState(seed)
         self.n_hidden = n_hidden
@@ -42,11 +42,11 @@ class NeuralNetMLP:
         self.batch_size = batch_size
         self.alpha = alpha
         self.activation = activation
-        # Set to coorect dimentions??
-        self.hidden_weights = None
-        self.hidden_bias = None
-        self.output_weights = None
-        self.output_bias = None
+
+        self.W_h = None
+        self.b_h = None
+        self.W_out = None
+        self.b_out = None
         self.tpe = tpe
 
 
@@ -78,32 +78,15 @@ class NeuralNetMLP:
         return None
 
     def initialize_weights_and_bias(self, X_train):
-        #self.hidden_weights = np.random.randn(self.n_features, self.n_hidden)
-        #self.hidden_bias = np.zeros(self.n_hidden) + 0.01
 
-        #self.output_weights = np.random.randn(self.n_hidden, 1)
-        #self.output_bias = np.zeros(1) + 0.01
-
-        # TODO: n_output should be equal to 2 in Logistic because we have to cases 0,1.
-        """
-        if (self.tpe == "regression"):
-            n_output = 1
-        elif(self.tpe == "logistic"):
-            n_output = 2
-        else:
-            n_ouput = 0
-        """
         n_output = 1
         n_samples, n_features = np.shape(X_train)
         # Using three hidden h_layers
-        self.b_h =  np.ones(1, self.n_hidden)
+        self.b_h =  np.ones((1, self.n_hidden))
         self.W_h = self.random.normal(loc=0.0, scale=0.1, size=(n_features, self.n_hidden))
-        #np.array([0.1*np.random.randn(n_features) for i in range(self.n_hidden)])
 
         self.b_out = np.ones(n_output)
         self.W_out = self.random.normal(loc=0.0, scale=0.1, size=(self.n_hidden, n_output))
-        #np.array([0.1*np.random.randn(self.n_hidden)], np.newaxis) # for i in range(n_output)
-
 
 
     def _forwardprop(self, X):
@@ -116,36 +99,30 @@ class NeuralNetMLP:
             A_out = self.activate(Z_out, "linear", deriv = False)
         elif (self.tpe == "logistic"):
             A_out = self.activate(Z_out, "sigmoid", deriv = False)
+        else:
+            raise ValueError('Invalid activation function {}'.format(self.tpe))
 
         return Z_hidden, A_hidden, Z_out, A_out
 
     def _backprop(self, y, X, A_hidden, Z_hidden, A_out, Z_out, batch_idx):
 
-        """A_hidden and Z_hidden are arrays"""
-        """
-        if np.ndim(y) < 2:
-            # if number of classification cases is less than two
-            grad_a_out = A_out - y[batch_idx, np.newaxis]
-        else:
-            grad_a_out = A_out - y[batch_idx]
-        """
-        delta_a_out = A_out - y[batch_idx, np.newaxis]
-
-        """ Use this in Logistic"""
-        #act_derivative_out = self.activation(Z_out, self.activation, deriv = True)
+        delta_a_out = A_out - y[batch_idx].reshape(self.batch_size, 1)
 
         """ For the regressioncase where the outpu func is linar"""
         if (self.tpe == "regression"):
-            act_derivative_out = self.activate(Z_out, "linaer", deriv = True)
+            act_derivative_out = self.activate(Z_out, "linear", deriv = True)
         elif (self.tpe == "logistic"):
             act_derivative_out = self.activate(Z_out, "sigmoid", deriv = True)
         else:
-            act_derivative_out=0
+            raise ValueError('Invalid activation function {}'.format(self.tpe))
         # Since we are in the regression case with a linear ouput funct.
 
         delta_out = delta_a_out*act_derivative_out
         grad_w_out = np.dot(A_hidden.T, delta_out)
         grad_b_out = np.sum(delta_out, axis=0)
+
+        self.W_out = self.W_out - self.eta * grad_w_out
+        self.b_out = self.b_out - self.eta * grad_b_out
 
         # oppdatere med eta
         act_derivative_h = self.activate(Z_hidden, self.activation, deriv=True)
@@ -153,18 +130,13 @@ class NeuralNetMLP:
         grad_w_h = np.dot(X[batch_idx].T, error_hidden)
         grad_b_h = np.sum(error_hidden, axis=0)
 
-        """Update weights and biases with penalty"""
-
-        delta_b_h = grad_b_h
-        delta_w_h = (grad_w_h + self.l2 * self.W_h)
+        #delta_b_h = grad_b_h
+        #delta_w_h = (grad_w_h + self.l2 * self.W_h)
 
         self.W_h = self.W_h - self.eta * grad_w_h
         self.b_h = self.b_h - self.eta * grad_b_h
 
-        #delta_b_out = grad_b_out
-        #delta_w_out = (grad_w_out + self.l2 * self.W_out)
-
-        return grad_w_out, grad_b_out
+        return None
 
     def _cost(self, X, y):
         """Compute cost function.
@@ -218,21 +190,15 @@ class NeuralNetMLP:
 
             batch_idx = indices[idx:idx + self.batch_size]
 
-            # TODO: Add extra dim for layers.
-
             # Forwardpropagation.
             Z_hidden, A_hidden, Z_out, A_out = self._forwardprop(
                 X_train[batch_idx, :]
             )
 
-
             # Backpropagation.
-            delta_w_out, delta_b_out = self._backprop(
+            self._backprop(
                 y_train, X_train, A_hidden, Z_hidden, A_out, Z_out, batch_idx
             )
-
-            self.W_out = self.W_out - self.eta * delta_w_out
-            self.b_out = self.b_out - self.eta * delta_b_out
 
         return self
 
@@ -280,7 +246,7 @@ class NeuralNetMLP:
                 train_preform = mean_squared_error(y_train, y_train_pred)
                 valid_preform = mean_squared_error(y_test, y_test_pred)
 
-                #self.eval_['cost'].append(cost)
+                #self.eval_['cost'].append(self._cost(X_train, y_train))
                 self.eval_['train_preform'].append(train_preform)
                 self.eval_['valid_preform'].append(valid_preform)
 
