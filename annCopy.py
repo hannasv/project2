@@ -91,7 +91,7 @@ class NeuralNetMLP:
 
     def _forwardprop(self, X):
         """Compute forward propagation step"""
-        Z_hidden = np.dot(X, self.W_h) + self.b_h
+        Z_hidden = np.clip(np.dot(X, self.W_h) + self.b_h, -250,250)
         A_hidden = self.activate(Z_hidden, self.activation, deriv = False)
         Z_out = np.dot(A_hidden, self.W_out) + self.b_out
 
@@ -176,7 +176,11 @@ class NeuralNetMLP:
         """
 
         Z_hidden, A_hidden, Z_out, A_out = self._forwardprop(X)
-        return A_out
+
+        if (self.tpe == "logistic"):
+            return np.where(A_out >= 0.5, 1, 0)
+        elif (self.tpe == "regression"):
+            return A_out
 
     def _minibatch_sgd(self, X_train, y_train):
         n_samples, n_features = np.shape(X_train)
@@ -241,6 +245,9 @@ class NeuralNetMLP:
             y_train_pred = self.predict(X_train)
             y_test_pred = self.predict(X_test)
 
+            y_test = y_test.reshape((len(y_test),1))
+            y_train = y_train.reshape((len(y_train),1))
+
             if (self.tpe == "regression"):
                 # Cost without penalty (y-X.dot(self.W_out)).T.dot(y-X.dot(self.W_out))
                 train_preform = mean_squared_error(y_train, y_train_pred)
@@ -252,8 +259,8 @@ class NeuralNetMLP:
 
             elif(self.tpe == "logistic"):
                 #Calculate accuracy
-                acc_test = np.sum(y_test == y_test_pred.T[0])/len(y_test)
-                acc_train = np.sum(y_train == y_test_pred.T[0])/len(y_test)
+                acc_test = np.sum(y_test == y_test_pred)/len(y_test)
+                acc_train = np.sum(y_train == y_test_pred)/len(y_test)
                 self.eval_['train_preform'].append(acc_train)
                 self.eval_['valid_preform'].append(acc_test)
         return self
