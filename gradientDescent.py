@@ -1,6 +1,6 @@
 import numpy as np
 
-class SteepestDescent:
+class gradientDescent:
     """Steepest descent
 
         PARAMETERS:
@@ -46,7 +46,7 @@ class SteepestDescent:
 
         rgen = np.random.RandomState(self.random_state)
         self.w_ = rgen.normal(loc=0.0, scale = 0.7, size = 1)
-        self.beta = np.random.randn(2, 1)
+        self.w_ = np.random.randn(2, 1)
 
         #max_iter = self.n_iter
 
@@ -63,9 +63,9 @@ class SteepestDescent:
                 random_index = np.random.randint(self.m)
                 xi = X[random_index:random_index + 1]
                 yi = y[random_index:random_index + 1]
-                gradients = 2 * xi.T.dot(xi.dot(theta) - yi)
+                gradients = 2 * xi.T.dot(xi.dot(self.w_) - yi)
                 eta = self.learning_schedule(epoch * self.m + i)
-                theta = theta - eta * gradients
+                self.w_ = self.w_- eta * gradients
         print("theta from own sdg" + str(theta))
 
         return self
