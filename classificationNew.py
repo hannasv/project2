@@ -2,36 +2,48 @@ import numpy as np
 import Costfunctions
 
 class LogisticRegression(object):
-    """Logistic Regression Classifier using gradient descent.
+    """Logistic Regression Classifier using stochastic gradient descent.
 
     Parameters
     ------------
     eta : float
-      Learning rate (between 0.0 and 1.0)
-    n_iter : int (defalt 50)
+      Learning rate (between 0.0001 and 1.0)
+    batch_size : int (defalt 10)
+      The size of the partioning of the trainingset.
+    epochs : int (defalt 100)
       Passes over the training dataset.
     random_state : int
       Random number generator seed for random weight
       initialization.
-     lmd: penalty
+    shuffle : boolean (default True)
+      Determines if the indices are shuffled between each epoch
+    key : string (default "sigmoid")
+        Choosing the activationfunction.
+    alpha : float (default 0.0001)
+        The steepnes of the activation function elu. UPDATE
+
 
 
     Attributes
     -----------
     w_ : 1d-array
       Weights after fitting.
-    cost_ : list
-      Logistic cost function value in each epoch.
+    b_ : float
+        bias after fitting.
+    epochCost : list
+      Logistic cost function value in each epoch
+
     """
-    def __init__(self, eta = 0.01, random_state = 0, shuffle = True, batch_size = 10, epochs=100, penalty = "l1",lmd = 0, tolerance=1e-14, key = "sigmoid", alpha = 0.01):
+
+    def __init__(self, eta = 0.01, random_state = 0, shuffle = True, batch_size = 10, epochs=100,  key = "sigmoid", alpha = 0.0001):
+        # penalty = "l1", lmd = 0
 
         self.eta = eta
         #self.n_iter = n_iter
         self.random = np.random.RandomState(random_state)
         self.key = key
-        self.penalty = penalty
-        self.lmd = lmd
-        self.tol = tolerance
+        #self.penalty = penalty
+        #self.lmd = lmd
         self.shuffle = shuffle
         self.alpha = alpha
         self.batch_size = batch_size
@@ -49,9 +61,9 @@ class LogisticRegression(object):
         Parameters
         ----------
         X : {array-like}, shape = [n_samples, n_features]
-          Training vectors, where n_samples is the numb
-          er of samples and
-          n_features is the number of features.
+          Training vectors, where n_samples is the number
+          of samples and n_features is the number of features.
+
         y : array-like, shape = [n_samples]
           Target values.
 
@@ -121,21 +133,41 @@ class LogisticRegression(object):
         return self
 
     def activation(self, Xw, key):
+        """
+        Activates UPDATE
+
+        The sigmoid activation function determines the probability
+        of being in a class.
+
+        Xw : (array-like), shape = print en shape og se (y)
+            Xw is the dotproduct of training data and weights pluss bias.
+
+        key : string (default "sigmoid")
+          The choosen activation function.
+
+        """
+
         if (key == "sigmoid"):
             return  1. / (1. + np.exp(-Xw))
         elif(key == "LReLu"):
             Z_out = np.copy(Xw)
             Z_out[np.where(Xw <= 0)] = self.alpha * Xw[np.where(Xw <= 0)]
             return Z_out
-        elif(key == "ELU"):
+        elif(key == "elu"):
             Z_out = np.copy(Xw)
             Z_out[np.where(Xw <= 0)] = self.alpha *(np.exp( Xw[np.where(Xw <= 0)]) - 1)
             return Z_out
         else:
-            print("Unvalide keyword argument. Use siogmoid or ELU for activation.")
+            raise ValueError('Invalid activation function {}'.format(key))
 
 
     def predict(self, X):
+        """ Predicts the results of logistic regression.
+
+        X : {array-like}, shape = [n_samples, n_features]
+          Training vectors, where n_samples is the numb
+
+        """
         net_input = np.dot(X, self.w_) + self.b_
         new =  1. / (1. + np.exp(-net_input))
         return np.where(new >= 0.5, 1, 0)

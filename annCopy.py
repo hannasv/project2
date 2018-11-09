@@ -2,15 +2,12 @@ import numpy as np
 from utils import r2_score, mean_squared_error
 
 class NeuralNetMLP:
-    """Multi-layer perceptron classifier.
+    """Multi-layer perceptron for regression or classification.
 
     Parameters
     ------------
     n_hidden : int (default: 30)
         Number of hidden units.
-    l2 : float (default: 0.)
-        Lambda value for L2-regularization.
-        No regularization if l2=0. (default)
     epochs : int (default: 100)
         Number of passes over the training set.
     eta : float (default: 0.001)
@@ -22,6 +19,12 @@ class NeuralNetMLP:
         (One gradient update per minibatch)
     seed : int (default: None)
         Random seed for initalizing weights and shuffling.
+    key : string (default "sigmoid")
+        Choosing the activationfunction.
+    alpha : float (default 0.0001)
+        The steepnes of the activation function elu. UPDATE
+    tpe : string (defalt "logistic")
+        Parameter to initialize a type of network.
 
     Attributes
     -----------
@@ -29,25 +32,36 @@ class NeuralNetMLP:
       Dictionary collecting the cost, training accuracy,
       and validation accuracy for each epoch during training.
 
+    W_h : array-like, shape = [n_features, n_hidden]
+        Weights in the hidden layer after fitting.
+
+    b_h : 1d-array, shape = [1, n_hidden]
+        Bias in the hidden layer after fitting.
+
+    w_out : 1d-array shape = [n_hidden, 1]
+      Output weights after fitting.
+
+    b_out : int
+        Output bias after fitting.
     """
-    def __init__(self, n_hidden=30, l2=0.4, epochs=100, eta=0.001, shuffle=True,
+    def __init__(self, n_hidden=30,  epochs=100, eta=0.001, shuffle=True,
                  batch_size=1, seed=None, alpha=0.0001, activation='sigmoid', tpe = "logistic"):
 
         self.random = np.random.RandomState(seed)
         self.n_hidden = n_hidden
-        self.l2 = l2
+        #self.l2 = l2
         self.epochs = epochs
         self.eta = eta
         self.shuffle = shuffle
         self.batch_size = batch_size
         self.alpha = alpha
         self.activation = activation
+        self.tpe = tpe
 
         self.W_h = None
         self.b_h = None
         self.W_out = None
         self.b_out = None
-        self.tpe = tpe
 
 
     def activate(self, Z, kind='elu', deriv=False):
@@ -78,6 +92,11 @@ class NeuralNetMLP:
         return None
 
     def initialize_weights_and_bias(self, X_train):
+        """ initalizing weight and biases in both hidden and output layer.
+
+        X_train
+
+        """
 
         n_output = 1
         n_samples, n_features = np.shape(X_train)
@@ -90,8 +109,13 @@ class NeuralNetMLP:
 
 
     def _forwardprop(self, X):
-        """Compute forward propagation step"""
-        Z_hidden = np.clip(np.dot(X, self.W_h) + self.b_h, -250,250)
+        """Compute forward propagation step
+
+        X : array, shape = [n_samples, n_features]
+            Input layer with original features.
+        """
+
+        Z_hidden = np.clip(np.dot(X, self.W_h), -250,250)+ self.b_h
         A_hidden = self.activate(Z_hidden, self.activation, deriv = False)
         Z_out = np.dot(A_hidden, self.W_out) + self.b_out
 
@@ -105,10 +129,24 @@ class NeuralNetMLP:
         return Z_hidden, A_hidden, Z_out, A_out
 
     def _backprop(self, y, X, A_hidden, Z_hidden, A_out, Z_out, batch_idx):
+        """ Backpropagation algorithmn for MLP with  one hidden layer
+
+        X_train : array, shape = [n_samples, n_features]
+            Input layer with original features.
+        y_train : array, shape = [n_samples]
+            Target class labels or data we want to fit.
+
+        A_hidden :
+        Z_hidden :
+        A_out :
+        Z_out :
+
+        batch_idx : UPDATE
+
+        """
 
         delta_a_out = A_out - y[batch_idx].reshape(self.batch_size, 1)
 
-        """ For the regressioncase where the outpu func is linar"""
         if (self.tpe == "regression"):
             act_derivative_out = self.activate(Z_out, "linear", deriv = True)
         elif (self.tpe == "logistic"):
@@ -124,7 +162,6 @@ class NeuralNetMLP:
         self.W_out = self.W_out - self.eta * grad_w_out
         self.b_out = self.b_out - self.eta * grad_b_out
 
-        # oppdatere med eta
         act_derivative_h = self.activate(Z_hidden, self.activation, deriv=True)
         error_hidden = np.dot(delta_out, self.W_out.T) * act_derivative_h
         grad_w_h = np.dot(X[batch_idx].T, error_hidden)
@@ -161,7 +198,8 @@ class NeuralNetMLP:
         return cost_linear
 
     def predict(self, X):
-        """Predict class labels
+        """Predicts outcome of regression or class labels depending
+        on the type of network you have initalized.
 
         Parameters
         -----------
@@ -171,7 +209,8 @@ class NeuralNetMLP:
         Returns:
         ----------
         y_pred : array, shape = [n_samples]
-            Predicted class labels.
+            Regression nn : predicts outcome of regression.
+            Classification : predicts class labels.
 
         """
 
@@ -183,6 +222,16 @@ class NeuralNetMLP:
             return A_out
 
     def _minibatch_sgd(self, X_train, y_train):
+        """
+        Performes the stochastic gradient descent with mini-batches for one epoch.
+
+
+        X_train : array, shape = [n_samples, n_features]
+            Input layer with original features.
+        y_train : array, shape = [n_samples]
+            Target class labels or data we want to fit.
+
+        """
         n_samples, n_features = np.shape(X_train)
 
         indices = np.arange(n_samples)
@@ -214,11 +263,11 @@ class NeuralNetMLP:
         X_train : array, shape = [n_samples, n_features]
             Input layer with original features.
         y_train : array, shape = [n_samples]
-            Target class labels.
+            Target class labels or data we want to fit.
         X_test : array, shape = [n_samples, n_features]
-            Sample features for validation during training
+            Sample features for validation during training.
         y_test : array, shape = [n_samples]
-            Sample labels for validation during training
+            Sample labels/data for validation during training.
 
         Returns:
         ----------
@@ -263,4 +312,5 @@ class NeuralNetMLP:
                 acc_train = np.sum(y_train == y_test_pred)/len(y_test)
                 self.eval_['train_preform'].append(acc_train)
                 self.eval_['valid_preform'].append(acc_test)
+
         return self
