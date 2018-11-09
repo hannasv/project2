@@ -1,4 +1,5 @@
 import numpy as np
+
 from utils import r2_score, mean_squared_error
 
 class NeuralNetMLP:
