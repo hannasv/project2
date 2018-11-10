@@ -43,6 +43,7 @@ class NeuralNetMLP:
 
     b_out : int
         Output bias after fitting.
+
     """
     def __init__(self, n_hidden=30,  epochs=100, eta=0.001, shuffle=True,
                  batch_size=1, seed=None, alpha=0.0001, activation='sigmoid', tpe = "logistic"):
@@ -63,6 +64,9 @@ class NeuralNetMLP:
         self.W_out = None
         self.b_out = None
 
+        # Averaged over epoch
+        self.train_perfom = None
+        self.test_perfom = None
 
     def activate(self, Z, kind='elu', deriv=False):
 
@@ -128,21 +132,23 @@ class NeuralNetMLP:
 
         return Z_hidden, A_hidden, Z_out, A_out
 
-    def _backprop(self, y, X, A_hidden, Z_hidden, A_out, Z_out, batch_idx):
+    def _backprop(self, y_train, X_train, A_hidden, Z_hidden, A_out, Z_out, batch_idx):
         """ Backpropagation algorithmn for MLP with  one hidden layer
 
         X_train : array, shape = [n_samples, n_features]
             Input layer with original features.
         y_train : array, shape = [n_samples]
             Target class labels or data we want to fit.
-
-        A_hidden :
-        Z_hidden :
-        A_out :
+        Z_hidden : (array-like) shape = []
+          Signal into the hidden layer.
+        A_hidden : (array-like) shape = []
+          The activated signal into the hidden layer.
         Z_out :
-
-        batch_idx : UPDATE
-
+            Signal into the output layer.
+        A_out :
+            Activated signal function.
+        batch_idx : int
+            The index where you iterate from.
         """
 
         delta_a_out = A_out - y[batch_idx].reshape(self.batch_size, 1)
@@ -164,7 +170,7 @@ class NeuralNetMLP:
 
         act_derivative_h = self.activate(Z_hidden, self.activation, deriv=True)
         error_hidden = np.dot(delta_out, self.W_out.T) * act_derivative_h
-        grad_w_h = np.dot(X[batch_idx].T, error_hidden)
+        grad_w_h = np.dot(X_train[batch_idx].T, error_hidden)
         grad_b_h = np.sum(error_hidden, axis=0)
 
         #delta_b_h = grad_b_h
@@ -175,27 +181,6 @@ class NeuralNetMLP:
 
         return None
 
-    def _cost(self, X, y):
-        """Compute cost function.
-
-        Parameters
-        ----------
-        UPDATE:
-        output : array, shape = [n_samples, n_output_units]
-            Activation of the output layer (forward propagation)
-
-        Returns
-        ---------
-        cost : float
-            Regularized cost
-
-        """
-
-        L2_term = self.l2 * (np.dot(self.W_h.T, self.W_h) + np.dot(self.W_out.T, self.W_out))
-        #output_errors = np.average((y_true - y_pred) ** 2, axis=0)
-        # Logistic cost
-        cost_linear = (y-X.dot(self.W_out)).T.dot(y-X.dot(self.W_out))
-        return cost_linear
 
     def predict(self, X):
         """Predicts outcome of regression or class labels depending
@@ -301,15 +286,13 @@ class NeuralNetMLP:
                 # Cost without penalty (y-X.dot(self.W_out)).T.dot(y-X.dot(self.W_out))
                 train_preform = mean_squared_error(y_train, y_train_pred)
                 valid_preform = mean_squared_error(y_test, y_test_pred)
-
-                #self.eval_['cost'].append(self._cost(X_train, y_train))
                 self.eval_['train_preform'].append(train_preform)
                 self.eval_['valid_preform'].append(valid_preform)
 
             elif(self.tpe == "logistic"):
                 #Calculate accuracy
                 acc_test = np.sum(y_test == y_test_pred)/len(y_test)
-                acc_train = np.sum(y_train == y_test_pred)/len(y_test)
+                acc_train = np.sum(y_train == y_train_pred)/len(y_train)
                 self.eval_['train_preform'].append(acc_train)
                 self.eval_['valid_preform'].append(acc_test)
 

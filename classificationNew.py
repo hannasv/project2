@@ -20,8 +20,11 @@ class LogisticRegression(object):
     key : string (default "sigmoid")
         Choosing the activationfunction.
     alpha : float (default 0.0001)
-        The steepnes of the activation function elu. UPDATE
-
+        The elu activationfunction converges to -alpha for negative values.
+    penalty : string (default "l1")
+        Choosing the type of penalization. l1 is lasso, l2 is ridge.
+    lmd : float (default 0.0)
+        Value of the penaly. lmd = 0, corresponds to no penalty. This is OLS.
 
 
     Attributes
@@ -32,7 +35,8 @@ class LogisticRegression(object):
         bias after fitting.
     epochCost : list
       Logistic cost function value in each epoch
-
+    eval_ : dict
+        Contains training and test performance.
     """
 
     def __init__(self, eta = 0.01, penalty = "l1", lmd = 0, random_state = 0, shuffle = True, batch_size = 10, epochs=100,  key = "sigmoid", alpha = 0.0001):
@@ -48,22 +52,29 @@ class LogisticRegression(object):
 
         # Attributes:
         self.eval_ = None
-        self.cost_=None
         self.w_ = None
         self.b_ = None
         self.epochCost = None
 
-    def fit(self, X, y):
+    def fit(self, X_train, y_train, X_test, y_test):
         """ Fit training data.
 
         Parameters
         ----------
-        X : {array-like}, shape = [n_samples, n_features]
+        X_train : {array-like}, shape = [n_samples, n_features]
           Training vectors, where n_samples is the number
           of samples and n_features is the number of features.
 
-        y : array-like, shape = [n_samples]
+        y_train : array-like, shape = [n_samples]
           Target values.
+
+        X_test : {array-like}, shape = [n_samples, n_features]
+          Test vectors, used for validation.
+
+        y_test : array-like, shape = [n_samples]
+          Test vector used for validation.
+
+
 
         Returns
         -------
@@ -72,13 +83,14 @@ class LogisticRegression(object):
         """
 
         #initalizing the weights
-        self.w_ = 0.1*np.random.randn(X.shape[1])
+        self.w_ = 0.1*np.random.randn(X_train.shape[1])
         self.b_ = 1
 
         self.epochCost = []
+        self.eval_ = {'cost': [], 'train_preform': [], 'valid_preform': []}
 
         for epoch in range(self.epochs):
-            n_samples, n_features = np.shape(X)
+            n_samples, n_features = np.shape(X_train)
             indices = np.arange(n_samples)
             cost_ = []
             scores_epochs = []
@@ -88,8 +100,8 @@ class LogisticRegression(object):
 
             for idx in range(0, n_samples, self.batch_size):
                 batch_idx = indices[idx:idx + self.batch_size]
-                batchX = X[batch_idx,:]
-                batchY = y[batch_idx]
+                batchX = X_train[batch_idx,:]
+                batchY = y_train[batch_idx]
                 net_input = np.dot(batchX, self.w_) + self.b_
                 output = self.activation(net_input, self.key)
                 errors = output - batchY
@@ -120,7 +132,15 @@ class LogisticRegression(object):
                 scores_epochs.append(score)
                 cost_.append(cost)
                 #print("score: " + str(np.average(scores_epochs)) + " for epoch:  " + str(epoch))\
+
+            y_train_pred = self.predict(X_train)
+            y_test_pred = self.predict(X_test)
+
             self.epochCost.append( np.average( cost_ ))
+            acc_test = np.sum(y_test == y_test_pred)/len(y_test)
+            acc_train = np.sum(y_train == y_train_pred)/len(y_train)
+            self.eval_['train_preform'].append(acc_train)
+            self.eval_['valid_preform'].append(acc_test)
         return self
 
     def activation(self, Xw, key):
@@ -156,7 +176,8 @@ class LogisticRegression(object):
         """ Predicts the results of logistic regression.
 
         X : {array-like}, shape = [n_samples, n_features]
-          Training vectors, where n_samples is the numb
+          Training vectors, where n_samples is the number
+          of samples and n_features is the number of features.
 
         """
         net_input = np.dot(X, self.w_) + self.b_
