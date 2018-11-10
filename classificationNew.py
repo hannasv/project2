@@ -35,22 +35,20 @@ class LogisticRegression(object):
 
     """
 
-    def __init__(self, eta = 0.01, random_state = 0, shuffle = True, batch_size = 10, epochs=100,  key = "sigmoid", alpha = 0.0001):
-        # penalty = "l1", lmd = 0
-
+    def __init__(self, eta = 0.01, penalty = "l1", lmd = 0, random_state = 0, shuffle = True, batch_size = 10, epochs=100,  key = "sigmoid", alpha = 0.0001):
         self.eta = eta
-        #self.n_iter = n_iter
         self.random = np.random.RandomState(random_state)
         self.key = key
-        #self.penalty = penalty
-        #self.lmd = lmd
+        self.penalty = penalty
+        self.lmd = lmd
         self.shuffle = shuffle
         self.alpha = alpha
         self.batch_size = batch_size
         self.epochs = epochs
+
+        # Attributes:
         self.eval_ = None
         self.cost_=None
-        #self.p = None
         self.w_ = None
         self.b_ = None
         self.epochCost = None
@@ -77,8 +75,6 @@ class LogisticRegression(object):
         self.w_ = 0.1*np.random.randn(X.shape[1])
         self.b_ = 1
 
-        # Usinf stochastic gradient descent_method
-
         self.epochCost = []
 
         for epoch in range(self.epochs):
@@ -94,14 +90,9 @@ class LogisticRegression(object):
                 batch_idx = indices[idx:idx + self.batch_size]
                 batchX = X[batch_idx,:]
                 batchY = y[batch_idx]
-                #print(batchY.shape)
-                np.dot(batchX, self.w_) + self.b_
+                net_input = np.dot(batchX, self.w_) + self.b_
                 output = self.activation(net_input, self.key)
-                #if np.isfinite(output).all():
-                #    print("ouput contains nans or inf")
                 errors = output - batchY
-                # Using lasso pentalty
-                # TODO. Make if function witch sets penalty term based on model = "ols", "ridge", "lasso"
 
                 if (self.penalty == "l2"):
                     # l2 --> ridge
@@ -115,10 +106,10 @@ class LogisticRegression(object):
                     gterm = self.lmd*np.sign(self.w_)
                     cterm = self.lmd*self.w_
 
-                cost = -batchY.dot(np.log(output + 1e-8)) - ((1 - batchY).dot(np.log(1 - output + 1e-8) ))
+                cost = -batchY.dot(np.log(output + 1e-8)) - ((1 - batchY).dot(np.log(1 - output + 1e-8) )) + cterm
 
-                gradient = batchX.T.dot(errors)
-                #update weights
+                gradient = batchX.T.dot(errors) + gterm
+
                 self.w_ -=  self.eta * gradient
                 self.b_ -=  self.eta * errors.sum()
 
@@ -134,7 +125,7 @@ class LogisticRegression(object):
 
     def activation(self, Xw, key):
         """
-        Activates UPDATE
+        Applies activation function.
 
         The sigmoid activation function determines the probability
         of being in a class.
