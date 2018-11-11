@@ -151,7 +151,7 @@ class NeuralNetMLP:
             The index where you iterate from.
         """
 
-        delta_a_out = A_out - y[batch_idx].reshape(self.batch_size, 1)
+        delta_a_out = A_out - y_train[batch_idx].reshape(self.batch_size, 1)
 
         if (self.tpe == "regression"):
             act_derivative_out = self.activate(Z_out, "linear", deriv = True)
